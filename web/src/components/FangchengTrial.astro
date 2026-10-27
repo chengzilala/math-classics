@@ -1,0 +1,212 @@
+---
+// 方程的交互：先猜「上禾一秉」的斗数，由第二、三式推出中禾与下禾，
+// 再看第一式的总量是否等于 39 斗。差多少，就往哪边调。
+// 上禾 9 又 1/4、中禾 4 又 1/4、下禾 2 又 3/4 时，三式同时成立。
+import '../styles/jsxgraph.css';
+---
+
+<div class="mc-interactive" data-mc-fangcheng>
+  <div class="mc-board" data-board></div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item">第一式：3 上 + 2 中 + 1 下</span>
+    <span class="mc-legend__item mc-legend__item--blue">虚线 = 39 斗</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-x-fangcheng">上禾一秉</label>
+    <input id="mc-x-fangcheng" type="range" min="8" max="10.5" step="0.25" value="8.5" data-x />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    拖动滑块试一个「上禾一秉」的斗数，看第一式还差多少。
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-fangcheng]');
+
+  if (root) {
+    const boardEl = root.querySelector<HTMLElement>('[data-board]');
+    const slider = root.querySelector<HTMLInputElement>('[data-x]');
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (boardEl && slider && resetButton && readout) {
+      const start = async () => {
+        // JSXGraph 打包后较大，等画板进入视口再加载，避免拖慢首屏
+        const { default: JXG } = await import('jsxgraph');
+
+        const board = JXG.JSXGraph.initBoard(boardEl, {
+          boundingbox: [-3, 3.1, 47, -3],
+          axis: false,
+          showCopyright: false,
+          showNavigation: false,
+          pan: { enabled: false },
+          zoom: { enabled: false },
+        });
+
+        // 第一式的三段：3 上禾、2 中禾、1 下禾
+        const segs = [0, 1, 2].map((i) => {
+          const left = board.create('point', [0, 0.55], { visible: false, fixed: true });
+          const right = board.create('point', [0, 0.55], { visible: false, fixed: true });
+          const colors = ['#d9b25f', '#6aa8ff', '#b9a06a'];
+          const opacities = [0.9, 0.55, 0.42];
+
+          board.create('segment', [left, right], {
+            strokeColor: colors[i],
+            strokeOpacity: opacities[i],
+            strokeWidth: 30,
+            lineCap: 'butt',
+            fixed: true,
+            highlight: false,
+          });
+
+          const label = board.create('text', [0, 0.55, ''], {
+            fontSize: 10,
+            strokeColor: '#0d1426',
+            anchorX: 'middle',
+            fixed: true,
+            highlight: false,
+            cssStyle: 'white-space: nowrap;',
+          });
+
+          return { left, right, label };
+        });
+
+        // 第一式的实：39 斗，用虚线标出来
+        const targetBottom = board.create('point', [39, -0.65], { visible: false, fixed: true });
+        const targetTop = board.create('point', [39, 1.75], { visible: false, fixed: true });
+        board.create('segment', [targetBottom, targetTop], {
+          strokeColor: '#ece6d6',
+          strokeWidth: 1,
+          dash: 3,
+          fixed: true,
+          highlight: false,
+        });
+
+        board.create('text', [39, 2.05, '39 斗'], {
+          fontSize: 12,
+          strokeColor: '#ece6d6',
+          anchorX: 'middle',
+          fixed: true,
+          highlight: false,
+        });
+
+        const totalText = board.create('text', [-2.4, 2.05, ''], {
+          fontSize: 12,
+          strokeColor: '#d9b25f',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+
+        board.create('text', [-2.4, -2.1, '第一式三段叠起来，越接近虚线越对'], {
+          fontSize: 11,
+          strokeColor: '#8d95a9',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+
+        // 把 0.25 的步长写成分数：9.25 → 「9 又 1/4」
+        const fmt = (value: number) => {
+          const whole = Math.floor(value + 1e-9);
+          const frac = value - whole;
+
+          for (let d = 2; d <= 8; d += 1) {
+            const n = Math.round(frac * d);
+            if (n > 0 && Math.abs(frac - n / d) < 1e-9) {
+              return whole > 0 ? `${whole} 又 ${n}/${d}` : `${n}/${d}`;
+            }
+          }
+
+          return Number.isInteger(value) ? String(value) : value.toFixed(2);
+        };
+
+        const sync = () => {
+          const x = Number(slider.value);
+          // 由第二、三式解出中禾 y 与下禾 z
+          const y = (76 - 5 * x) / 7;
+          const z = 34 - 2 * x - 3 * y;
+          const total = 3 * x + 2 * y + z;
+          const gap = total - 39;
+          const exact = Math.abs(gap) < 1e-9;
+
+          const lengths = [3 * x, 2 * y, z];
+          const names = ['3 上', '2 中', '1 下'];
+          let acc = 0;
+
+          segs.forEach(({ left, right, label }, i) => {
+            const from = acc;
+            const to = acc + lengths[i];
+            const mid = (from + to) / 2;
+
+            left.setPosition(JXG.COORDS_BY_USER, [from, 0.55]);
+            right.setPosition(JXG.COORDS_BY_USER, [to, 0.55]);
+            label.setText(names[i]);
+            label.setPosition(JXG.COORDS_BY_USER, [mid, 0.55]);
+
+            acc = to;
+          });
+
+          totalText.setText(`合起来 ${total.toFixed(2)} 斗`);
+          board.update();
+
+          if (exact) {
+            readout.innerHTML = `试对了：上禾 <strong>${fmt(x)} 斗</strong>、中禾 ${fmt(y)} 斗、下禾 ${fmt(z)} 斗，第一式正好 39 斗，三个等式同时成立。`;
+          } else {
+            readout.innerHTML =
+              `设上禾一秉 ${fmt(x)} 斗 → 第二式推出中禾 ${fmt(y)} 斗、第三式推出下禾 ${fmt(z)} 斗；` +
+              `第一式算得 <strong>${total.toFixed(2)} 斗</strong>，与 39 斗差 ${Math.abs(gap).toFixed(2)} 斗。` +
+              (gap > 0 ? '往小调。' : '往大调。');
+          }
+        };
+
+        slider.addEventListener('input', sync);
+        resetButton.addEventListener('click', () => {
+          slider.value = '8.5';
+          sync();
+        });
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+
+        const fitBoard = () => {
+          const width = Math.round(boardEl.clientWidth);
+          const height = Math.round(boardEl.clientHeight);
+          if (width === 0 || height === 0 || (width === lastWidth && height === lastHeight)) return;
+          lastWidth = width;
+          lastHeight = height;
+          board.resizeContainer(width, height, true);
+        };
+
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(fitBoard).observe(boardEl);
+        } else {
+          window.addEventListener('resize', fitBoard);
+        }
+        fitBoard();
+
+        sync();
+      };
+
+      // 画板进入视口（提前 200px）再加载
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer.disconnect();
+              start();
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        observer.observe(root);
+      } else {
+        start();
+      }
+    }
+  }
+</script>

@@ -1,0 +1,190 @@
+---
+// 衰分的交互：把总数按 5 : 4 : 3 : 2 : 1 切成五段。
+// 拖动总鹿数，五段同比例伸缩；5 只鹿时，每份 1/3 只，正好是《九章》衰分第一问。
+import '../styles/jsxgraph.css';
+---
+
+<div class="mc-interactive" data-mc-shuaifen>
+  <div class="mc-board" data-board></div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item">按爵次 5 : 4 : 3 : 2 : 1 分</span>
+    <span class="mc-legend__item mc-legend__item--blue">五段合起来 = 全部鹿</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-t-shuaifen">共猎得</label>
+    <input id="mc-t-shuaifen" type="range" min="3" max="12" step="1" value="5" data-t />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    拖动滑块改变鹿的总数，看五个人按份数各拿多少。
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-shuaifen]');
+
+  if (root) {
+    const boardEl = root.querySelector<HTMLElement>('[data-board]');
+    const slider = root.querySelector<HTMLInputElement>('[data-t]');
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (boardEl && slider && resetButton && readout) {
+      const start = async () => {
+        // JSXGraph 打包后较大，等画板进入视口再加载，避免拖慢首屏
+        const { default: JXG } = await import('jsxgraph');
+
+        const TOTAL_PARTS = 15;
+        const ranks = [
+          { name: '大夫', parts: 5, color: '#d9b25f', opacity: 0.95 },
+          { name: '不更', parts: 4, color: '#d9b25f', opacity: 0.8 },
+          { name: '簪裹', parts: 3, color: '#d9b25f', opacity: 0.65 },
+          { name: '上造', parts: 2, color: '#d9b25f', opacity: 0.5 },
+          { name: '公士', parts: 1, color: '#6aa8ff', opacity: 0.75 },
+        ];
+
+        const board = JXG.JSXGraph.initBoard(boardEl, {
+          boundingbox: [-0.1, 2.3, 5.1, -1.9],
+          axis: false,
+          showCopyright: false,
+          showNavigation: false,
+          pan: { enabled: false },
+          zoom: { enabled: false },
+        });
+
+        const totalText = board.create('text', [0, 1.85, '共 5 鹿 · 15 份'], {
+          fontSize: 12,
+          strokeColor: '#d9b25f',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+
+        const bars = ranks.map((rank, i) => {
+          const left = board.create('point', [0, 0.55], { visible: false, fixed: true });
+          const right = board.create('point', [0, 0.55], { visible: false, fixed: true });
+
+          board.create('segment', [left, right], {
+            strokeColor: rank.color,
+            strokeOpacity: rank.opacity,
+            strokeWidth: 30,
+            lineCap: 'butt',
+            fixed: true,
+            highlight: false,
+          });
+
+          const nameText = board.create('text', [0, -0.5, rank.name], {
+            fontSize: 11,
+            strokeColor: '#8d95a9',
+            anchorX: 'middle',
+            fixed: true,
+            highlight: false,
+          });
+
+          const shareText = board.create('text', [0, -1.25, ''], {
+            fontSize: 11,
+            strokeColor: i === ranks.length - 1 ? '#9fc6ff' : '#ece6d6',
+            anchorX: 'middle',
+            fixed: true,
+            highlight: false,
+            cssStyle: 'white-space: nowrap;',
+          });
+
+          return { left, right, nameText, shareText, rank };
+        });
+
+        // 把小数换成分数：1.666… → 「1 又 2/3」，整数照写
+        const fmt = (value: number) => {
+          const whole = Math.floor(value + 1e-9);
+          const frac = value - whole;
+
+          for (let d = 2; d <= TOTAL_PARTS; d += 1) {
+            const n = Math.round(frac * d);
+            if (n > 0 && Math.abs(frac - n / d) < 1e-9) {
+              return whole > 0 ? `${whole} 又 ${n}/${d}` : `${n}/${d}`;
+            }
+          }
+
+          return Number.isInteger(value) ? String(value) : value.toFixed(2);
+        };
+
+        const sync = () => {
+          const total = Number(slider.value);
+          let acc = 0;
+
+          bars.forEach(({ left, right, nameText, shareText, rank }) => {
+            const share = (total * rank.parts) / TOTAL_PARTS;
+            const from = acc;
+            const to = acc + share;
+            const mid = (from + to) / 2;
+
+            left.setPosition(JXG.COORDS_BY_USER, [from, 0.55]);
+            right.setPosition(JXG.COORDS_BY_USER, [to, 0.55]);
+            nameText.setPosition(JXG.COORDS_BY_USER, [mid, -0.5]);
+            shareText.setText(`${fmt(share)} 只`);
+            shareText.setPosition(JXG.COORDS_BY_USER, [mid, -1.25]);
+
+            acc = to;
+          });
+
+          totalText.setText(`共 ${total} 鹿 · 15 份`);
+          // 横轴范围跟着总数走，五段始终铺满画板
+          board.setBoundingBox([-0.06, 2.3, total + 0.06, -1.9], false);
+          board.update();
+
+          const per = total / TOTAL_PARTS;
+          readout.innerHTML =
+            total === 5
+              ? `5 鹿分成 15 份，每份 <strong>1/3 只</strong>：大夫 1 又 2/3、不更 1 又 1/3、簪裹 1、上造 2/3、公士 1/3——正是《九章》衰分第一问。`
+              : `${total} 鹿分成 15 份，每份 ${fmt(per)} 只：大夫拿 <strong>${fmt((total * 5) / 15)} 只</strong>，公士拿 ${fmt(per)} 只。份数不变，总数变了，分配同比例放大。`;
+        };
+
+        slider.addEventListener('input', sync);
+        resetButton.addEventListener('click', () => {
+          slider.value = '5';
+          sync();
+        });
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+
+        const fitBoard = () => {
+          const width = Math.round(boardEl.clientWidth);
+          const height = Math.round(boardEl.clientHeight);
+          if (width === 0 || height === 0 || (width === lastWidth && height === lastHeight)) return;
+          lastWidth = width;
+          lastHeight = height;
+          board.resizeContainer(width, height, true);
+        };
+
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(fitBoard).observe(boardEl);
+        } else {
+          window.addEventListener('resize', fitBoard);
+        }
+        fitBoard();
+
+        sync();
+      };
+
+      // 画板进入视口（提前 200px）再加载
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer.disconnect();
+              start();
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        observer.observe(root);
+      } else {
+        start();
+      }
+    }
+  }
+</script>

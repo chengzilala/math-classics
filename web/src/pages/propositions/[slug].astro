@@ -1,0 +1,171 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Exercises from '../../components/Exercises.astro';
+import YingbuzuLine from '../../components/YingbuzuLine.astro';
+import FangtianArea from '../../components/FangtianArea.astro';
+import SumiRatio from '../../components/SumiRatio.astro';
+import GouguTriangle from '../../components/GouguTriangle.astro';
+import ShuaifenShare from '../../components/ShuaifenShare.astro';
+import ShaoguangSquare from '../../components/ShaoguangSquare.astro';
+import ShanggongBox from '../../components/ShanggongBox.astro';
+import JunshuPursuit from '../../components/JunshuPursuit.astro';
+import FangchengTrial from '../../components/FangchengTrial.astro';
+import { site } from '../../site';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('propositions');
+  return entries.map((entry) => ({
+    params: { slug: entry.data.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const p = entry.data;
+
+const interactionMap = {
+  'yingbuzu-line': YingbuzuLine,
+  'fangtian-area': FangtianArea,
+  'sumi-ratio': SumiRatio,
+  'gougu-triangle': GouguTriangle,
+  'shuaifen-share': ShuaifenShare,
+  'shaoguang-square': ShaoguangSquare,
+  'shanggong-box': ShanggongBox,
+  'junshu-pursuit': JunshuPursuit,
+  'fangcheng-trial': FangchengTrial,
+} as const;
+
+const Interaction = interactionMap[p.interaction as keyof typeof interactionMap];
+if (!Interaction) {
+  throw new Error(`未知的交互组件：${p.interaction}`);
+}
+
+const toc = [
+  { id: 'original', label: '原文' },
+  { id: 'plain', label: '白话' },
+  { id: 'hands-on', label: '动手' },
+  { id: 'practice', label: '练习' },
+  { id: 'source', label: '出处' },
+];
+---
+
+<Base title={p.title} description={`${p.title}：${p.summary}`} full>
+  <article class="mc-article mc-article--full">
+    <header class="mc-proposition__head">
+      <div class="mc-proposition__meta">
+        <p class="mc-kicker">
+          {p.line} · {p.chapter}
+        </p>
+        <h1>{p.title}</h1>
+      </div>
+      <p class="mc-lead">{p.summary}</p>
+    </header>
+
+    <nav class="mc-toc-mobile" aria-label="本页目录">
+      <details>
+        <summary>本页目录</summary>
+        <ul>
+          {toc.map((item) => <li><a href={`#${item.id}`}>{item.label}</a></li>)}
+        </ul>
+      </details>
+    </nav>
+
+    <div class="mc-layout">
+      <div class="mc-sections">
+        <section id="original" class="mc-section">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">ORIGINAL</p>
+            <h2>原文</h2>
+          </header>
+          <details class="mc-original">
+            <summary>看原文（繁体，照录不改字）</summary>
+            <pre>{p.original}</pre>
+          </details>
+          {p.original_note && <p class="mc-original__note">{p.original_note}</p>}
+        </section>
+
+        <section id="plain" class="mc-section">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">PLAIN · 白话</p>
+            <h2>白话三步</h2>
+          </header>
+          <ol class="mc-steps">
+            {
+              p.steps.map((step, i) => (
+                <li>
+                  <span class="mc-steps__no">{i + 1}</span>
+                  <div>
+                    <p>{step.text}</p>
+                    {step.analogy && <p class="mc-steps__analogy">{step.analogy}</p>}
+                  </div>
+                </li>
+              ))
+            }
+          </ol>
+        </section>
+
+        <section id="hands-on" class="mc-section">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">HANDS-ON · 动手</p>
+            <h2>动手试一试</h2>
+          </header>
+          <p>
+            {p.interaction_note ?? '拖动图中的控件，亲手把题里的关系走一遍。'}
+          </p>
+          <Interaction />
+        </section>
+
+        <section id="practice" class="mc-section">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">PRACTICE · 练习</p>
+            <h2>小练习</h2>
+          </header>
+          <Exercises exercises={p.exercises} propositionId={p.id} />
+        </section>
+
+        <section id="source" class="mc-section mc-source">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">SOURCE · 出处</p>
+            <h2>出处与勘误</h2>
+          </header>
+          <dl>
+            <div>
+              <dt>书名</dt>
+              <dd>{p.line}</dd>
+            </div>
+            <div>
+              <dt>卷 / 题号</dt>
+              <dd>{p.chapter}</dd>
+            </div>
+            <div>
+              <dt>底本</dt>
+              <dd>{p.source}</dd>
+            </div>
+            <div>
+              <dt>许可</dt>
+              <dd>{p.source_license}</dd>
+            </div>
+            <div>
+              <dt>校对人</dt>
+              <dd>{p.proofreader}</dd>
+            </div>
+            <div>
+              <dt>最后更新</dt>
+              <dd>{p.updated}</dd>
+            </div>
+          </dl>
+          <p class="mc-source__errata">
+            发现错漏？<a href={site.errataHref}>{site.errataLabel}</a>。原文以底本为准，白话与解析会随勘误更新。
+          </p>
+        </section>
+      </div>
+
+      <aside class="mc-toc" aria-label="本页目录">
+        <ul>
+          {toc.map((item) => <li><a href={`#${item.id}`}>{item.label}</a></li>)}
+        </ul>
+      </aside>
+    </div>
+  </article>
+</Base>

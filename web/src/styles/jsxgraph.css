@@ -1,0 +1,23 @@
+/*
+  JSXGraph 1.14.1 的基础容器样式。
+  摘自 jsxgraph/distrib/jsxgraph.css（MIT / LGPL-3.0，版权归 JSXGraph 作者），
+  只保留本项目用到的规则；配色由 .mc-board 覆盖，避免默认的白底蓝框。
+*/
+.jxgbox {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  touch-action: none;
+  -ms-touch-action: none;
+}
+
+.jxgbox svg text {
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.jxgbox :focus {
+  outline-width: 0.5px;
+  outline-style: dotted;
+}

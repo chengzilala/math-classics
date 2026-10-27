@@ -1,0 +1,16 @@
+{
+  "name": "math-classics-web",
+  "version": "0.8.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "node scripts/check-ledger.mjs && astro build",
+    "preview": "astro preview",
+    "check": "node scripts/check-ledger.mjs"
+  },
+  "dependencies": {
+    "astro": "^7.4.2",
+    "jsxgraph": "^1.14.1"
+  }
+}

@@ -1,0 +1,201 @@
+---
+// 方田的交互：拖动广、从两个滑块，长方形实时变化，面积与亩数一起算出来。
+// 当时 240 平方步 = 1 亩，15 × 16 正好凑满。
+import '../styles/jsxgraph.css';
+---
+
+<div class="mc-interactive" data-mc-fangtian>
+  <div class="mc-board mc-board--square" data-board></div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item">面积 = 广 × 从</span>
+    <span class="mc-legend__item mc-legend__item--blue">240 平方步 = 1 亩</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-w-fangtian">广</label>
+    <input id="mc-w-fangtian" type="range" min="1" max="20" step="1" value="8" data-w />
+    <label for="mc-h-fangtian">从</label>
+    <input id="mc-h-fangtian" type="range" min="1" max="20" step="1" value="6" data-h />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    拖动两个滑块改变田的边长，看看面积什么时候正好是 1 亩。
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-fangtian]');
+
+  if (root) {
+    const boardEl = root.querySelector<HTMLElement>('[data-board]');
+    const widthSlider = root.querySelector<HTMLInputElement>('[data-w]');
+    const heightSlider = root.querySelector<HTMLInputElement>('[data-h]');
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (boardEl && widthSlider && heightSlider && resetButton && readout) {
+      const start = async () => {
+        // JSXGraph 打包后较大，等画板进入视口再加载，避免拖慢首屏
+        const { default: JXG } = await import('jsxgraph');
+
+        const board = JXG.JSXGraph.initBoard(boardEl, {
+          boundingbox: [-2, 22, 23, -3],
+          keepaspectratio: true,
+          axis: true,
+          showCopyright: false,
+          showNavigation: false,
+          pan: { enabled: false },
+          zoom: { enabled: false },
+          defaultAxes: {
+            x: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 5,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+            y: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 5,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+          },
+        });
+
+        const p0 = board.create('point', [0, 0], { visible: false, fixed: true });
+        const p1 = board.create('point', [8, 0], { visible: false, fixed: true });
+        const p2 = board.create('point', [8, 6], { visible: false, fixed: true });
+        const p3 = board.create('point', [0, 6], { visible: false, fixed: true });
+
+        const rect = board.create('polygon', [p0, p1, p2, p3], {
+          fillColor: '#d9b25f',
+          fillOpacity: 0.12,
+          borders: { strokeColor: '#d9b25f', strokeWidth: 2 },
+          vertices: { visible: false },
+          highlight: false,
+        });
+
+        const labelW = board.create('text', [4, -1.5, '广 8 步'], {
+          fontSize: 12,
+          strokeColor: '#d9b25f',
+          anchorX: 'middle',
+          fixed: true,
+          highlight: false,
+        });
+        const labelH = board.create('text', [8.8, 3, '从 6 步'], {
+          fontSize: 12,
+          strokeColor: '#d9b25f',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+        const areaText = board.create('text', [4, 3, '48 平方步'], {
+          fontSize: 13,
+          strokeColor: '#ece6d6',
+          anchorX: 'middle',
+          fixed: true,
+          highlight: false,
+        });
+
+        board.create('text', [21.4, -2.2, '广（步）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'right',
+          fixed: true,
+          highlight: false,
+        });
+        board.create('text', [1.2, 21.2, '从（步）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+
+        const sync = () => {
+          const w = Number(widthSlider.value);
+          const h = Number(heightSlider.value);
+          const area = w * h;
+          const mu = area / 240;
+          const exact = area === 240;
+
+          p1.setPosition(JXG.COORDS_BY_USER, [w, 0]);
+          p2.setPosition(JXG.COORDS_BY_USER, [w, h]);
+          p3.setPosition(JXG.COORDS_BY_USER, [0, h]);
+
+          labelW.setText(`广 ${w} 步`);
+          labelW.setPosition(JXG.COORDS_BY_USER, [w / 2, -1.5]);
+          labelH.setText(`从 ${h} 步`);
+          labelH.setPosition(JXG.COORDS_BY_USER, [w + 0.8, h / 2]);
+          areaText.setText(`${area} 平方步`);
+          areaText.setPosition(JXG.COORDS_BY_USER, [w / 2, h / 2]);
+
+          rect.setAttribute({ fillOpacity: exact ? 0.24 : 0.12 });
+
+          if (exact) {
+            readout.innerHTML = `<strong>${w} × ${h} = 240 平方步 = 1 亩</strong>——这正是《九章》方田第一问的答案。`;
+          } else {
+            readout.innerHTML =
+              `广 ${w} × 从 ${h} = <strong>${area} 平方步</strong>，约 ${mu.toFixed(2)} 亩。` +
+              (area < 240 ? '还差一点，继续加大。' : '已经超过 1 亩了。');
+          }
+
+          board.update();
+        };
+
+        widthSlider.addEventListener('input', sync);
+        heightSlider.addEventListener('input', sync);
+        resetButton.addEventListener('click', () => {
+          widthSlider.value = '8';
+          heightSlider.value = '6';
+          sync();
+        });
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+
+        const fitBoard = () => {
+          const width = Math.round(boardEl.clientWidth);
+          const height = Math.round(boardEl.clientHeight);
+          if (width === 0 || height === 0 || (width === lastWidth && height === lastHeight)) return;
+          lastWidth = width;
+          lastHeight = height;
+          board.resizeContainer(width, height, true);
+        };
+
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(fitBoard).observe(boardEl);
+        } else {
+          window.addEventListener('resize', fitBoard);
+        }
+        fitBoard();
+
+        sync();
+      };
+
+      // 画板进入视口（提前 200px）再加载
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer.disconnect();
+              start();
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        observer.observe(root);
+      } else {
+        start();
+      }
+    }
+  }
+</script>

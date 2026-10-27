@@ -1,0 +1,104 @@
+---
+interface Exercise {
+  kind: 'concept' | 'calc' | 'transfer';
+  question: string;
+  options: string[];
+  answer: number;
+  hint: string;
+  note: string;
+}
+
+interface Props {
+  exercises: Exercise[];
+  propositionId: string;
+}
+
+const { exercises, propositionId } = Astro.props;
+
+const kindLabel: Record<Exercise['kind'], string> = {
+  concept: '认概念',
+  calc: '算一算',
+  transfer: '换个数字',
+};
+---
+
+<ol class="mc-exercises" data-exercises data-proposition-id={propositionId}>
+  {
+    exercises.map((ex, i) => (
+      <li class="mc-exercise" data-exercise data-answer={ex.answer}>
+        <p class="mc-exercise__q">
+          <span class="mc-exercise__tag">{kindLabel[ex.kind]}</span>
+          {ex.question}
+        </p>
+        <div class="mc-exercise__options" role="group" aria-label={`第 ${i + 1} 题选项`}>
+          {ex.options.map((option, j) => (
+            <button type="button" class="mc-choice" data-choice data-index={j} aria-pressed="false">
+              {option}
+            </button>
+          ))}
+        </div>
+        <p class="mc-exercise__msg" data-msg aria-live="polite" />
+        <p class="mc-exercise__note" data-note hidden>
+          {ex.note}
+        </p>
+        <p class="mc-exercise__note" data-hint hidden>
+          提示：{ex.hint}
+        </p>
+      </li>
+    ))
+  }
+</ol>
+
+<p class="mc-exercises__done" data-exercises-done hidden>
+  三题都做完了，已记进本机进度（只存在你的浏览器里）。
+</p>
+
+<script>
+  import { markDone } from '../scripts/progress';
+
+  document.querySelectorAll<HTMLElement>('[data-exercises]').forEach((list) => {
+    const propositionId = list.dataset.propositionId;
+    const doneNote = list.parentElement?.querySelector<HTMLElement>('[data-exercises-done]');
+    const boxes = Array.from(list.querySelectorAll<HTMLElement>('[data-exercise]'));
+
+    const allSolved = () => boxes.every((box) => box.dataset.solved === 'true');
+
+    boxes.forEach((box) => {
+      const answer = Number(box.dataset.answer);
+      const msg = box.querySelector<HTMLElement>('[data-msg]');
+      const hint = box.querySelector<HTMLElement>('[data-hint]');
+      const note = box.querySelector<HTMLElement>('[data-note]');
+      const choices = Array.from(box.querySelectorAll<HTMLButtonElement>('[data-choice]'));
+
+      choices.forEach((button) => {
+        button.addEventListener('click', () => {
+          if (box.dataset.solved === 'true') return;
+
+          const picked = Number(button.dataset.index);
+          const isRight = picked === answer;
+
+          button.dataset.state = isRight ? 'right' : 'wrong';
+          button.setAttribute('aria-pressed', isRight ? 'true' : 'false');
+
+          if (msg) {
+            msg.dataset.kind = isRight ? 'right' : 'wrong';
+            msg.textContent = isRight ? '对了，往下走。' : '还不对，再看看前面的白话。';
+          }
+
+          if (isRight) {
+            box.dataset.solved = 'true';
+            if (hint) hint.hidden = true;
+            if (note) note.hidden = false;
+
+            if (propositionId && allSolved()) {
+              markDone(propositionId);
+              if (doneNote) doneNote.hidden = false;
+            }
+          } else if (hint) {
+            hint.hidden = false;
+          }
+        });
+      });
+    });
+  });
+</script>

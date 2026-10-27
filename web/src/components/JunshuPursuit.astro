@@ -1,0 +1,238 @@
+---
+// 均输的交互：追及问题画成两条「路程—时间」直线。
+// 善行者 y = 100t，不善行者 y = 100 + 60t；两线在 t = 2.5 相交，路程都是 250 步。
+import '../styles/jsxgraph.css';
+---
+
+<div class="mc-interactive" data-mc-junshu>
+  <div class="mc-board" data-board></div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item">善行者：每单位时间 100 步</span>
+    <span class="mc-legend__item mc-legend__item--blue">不善行者：先走 100 步，每单位时间 60 步</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-t-junshu">时间</label>
+    <input id="mc-t-junshu" type="range" min="0" max="4" step="0.25" value="0.25" data-t />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    拖动时间滑块，看两个人各自走到哪里、还差多少步。
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-junshu]');
+
+  if (root) {
+    const boardEl = root.querySelector<HTMLElement>('[data-board]');
+    const slider = root.querySelector<HTMLInputElement>('[data-t]');
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (boardEl && slider && resetButton && readout) {
+      const start = async () => {
+        // JSXGraph 打包后较大，等画板进入视口再加载，避免拖慢首屏
+        const { default: JXG } = await import('jsxgraph');
+
+        const board = JXG.JSXGraph.initBoard(boardEl, {
+          boundingbox: [-0.25, 460, 4.45, -50],
+          axis: true,
+          showCopyright: false,
+          showNavigation: false,
+          pan: { enabled: false },
+          zoom: { enabled: false },
+          defaultAxes: {
+            x: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 1,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+            y: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 100,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+          },
+        });
+
+        const fastLine = board.create('line', [[0, 0], [4, 400]], {
+          straightFirst: false,
+          straightLast: false,
+          strokeColor: '#d9b25f',
+          strokeWidth: 2,
+          fixed: true,
+          highlight: false,
+        });
+        const slowLine = board.create('line', [[0, 100], [4, 340]], {
+          straightFirst: false,
+          straightLast: false,
+          strokeColor: '#6aa8ff',
+          strokeWidth: 2,
+          fixed: true,
+          highlight: false,
+        });
+
+        board.create('intersection', [fastLine, slowLine, 0], {
+          name: '追上 250 步',
+          fixed: true,
+          size: 4,
+          strokeColor: '#ece6d6',
+          fillColor: '#d9b25f',
+          showInfobox: false,
+          withLabel: true,
+          label: { offset: [10, -16], fontSize: 12, strokeColor: '#d9b25f' },
+        });
+
+        board.create('text', [4.3, -40, '时间（单位）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'right',
+          fixed: true,
+          highlight: false,
+        });
+        board.create('text', [0.1, 440, '路程（步）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+
+        // 同一时刻的竖线，方便比较两人位置
+        const cursorBottom = board.create('point', [0.25, -50], { visible: false, fixed: true });
+        const cursorTop = board.create('point', [0.25, 460], { visible: false, fixed: true });
+        board.create('segment', [cursorBottom, cursorTop], {
+          strokeColor: 'rgba(236,230,214,0.28)',
+          strokeWidth: 1,
+          dash: 3,
+          fixed: true,
+          highlight: false,
+        });
+
+        const fastPoint = board.create('point', [0.25, 25], {
+          size: 4,
+          fixed: true,
+          withLabel: false,
+          showInfobox: false,
+          strokeColor: '#d9b25f',
+          fillColor: '#d9b25f',
+        });
+        const slowPoint = board.create('point', [0.25, 115], {
+          size: 4,
+          fixed: true,
+          withLabel: false,
+          showInfobox: false,
+          strokeColor: '#6aa8ff',
+          fillColor: '#6aa8ff',
+        });
+
+        // 两人当前的距离
+        board.create('segment', [fastPoint, slowPoint], {
+          strokeColor: '#ece6d6',
+          strokeWidth: 3,
+          fixed: true,
+          highlight: false,
+        });
+
+        const fastText = board.create('text', [0.32, 45, '25 步'], {
+          fontSize: 11,
+          strokeColor: '#d9b25f',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+          cssStyle: 'white-space: nowrap;',
+        });
+        const slowText = board.create('text', [0.32, 135, '115 步'], {
+          fontSize: 11,
+          strokeColor: '#9fc6ff',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+          cssStyle: 'white-space: nowrap;',
+        });
+
+        const sync = () => {
+          const t = Number(slider.value);
+          const fast = 100 * t;
+          const slow = 100 + 60 * t;
+          const gap = slow - fast;
+          const caught = Math.abs(gap) < 1e-9;
+
+          cursorBottom.setPosition(JXG.COORDS_BY_USER, [t, -50]);
+          cursorTop.setPosition(JXG.COORDS_BY_USER, [t, 460]);
+          fastPoint.setPosition(JXG.COORDS_BY_USER, [t, fast]);
+          slowPoint.setPosition(JXG.COORDS_BY_USER, [t, slow]);
+
+          fastText.setText(`${fast} 步`);
+          fastText.setPosition(JXG.COORDS_BY_USER, [t + 0.07, fast + 20]);
+          slowText.setText(`${slow} 步`);
+          slowText.setPosition(JXG.COORDS_BY_USER, [t + 0.07, slow + 20]);
+
+          board.update();
+
+          if (caught) {
+            readout.innerHTML = `时间 2.5：善行者走了 <strong>250 步</strong>，不善行者走了 100 + 150 = <strong>250 步</strong>，两人在同一点——答曰「二百五十步」。`;
+          } else if (gap > 0) {
+            readout.innerHTML = `时间 ${t}：善行者 ${fast} 步，不善行者 ${slow} 步，<strong>还差 ${gap} 步</strong>。每单位时间追近 40 步。`;
+          } else {
+            readout.innerHTML = `时间 ${t}：善行者 ${fast} 步，已经超过不善行者 <strong>${-gap} 步</strong>。拖回到 2.5 看相遇。`;
+          }
+        };
+
+        slider.addEventListener('input', sync);
+        resetButton.addEventListener('click', () => {
+          slider.value = '0.25';
+          sync();
+        });
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+
+        const fitBoard = () => {
+          const width = Math.round(boardEl.clientWidth);
+          const height = Math.round(boardEl.clientHeight);
+          if (width === 0 || height === 0 || (width === lastWidth && height === lastHeight)) return;
+          lastWidth = width;
+          lastHeight = height;
+          board.resizeContainer(width, height, true);
+        };
+
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(fitBoard).observe(boardEl);
+        } else {
+          window.addEventListener('resize', fitBoard);
+        }
+        fitBoard();
+
+        sync();
+      };
+
+      // 画板进入视口（提前 200px）再加载
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer.disconnect();
+              start();
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        observer.observe(root);
+      } else {
+        start();
+      }
+    }
+  }
+</script>

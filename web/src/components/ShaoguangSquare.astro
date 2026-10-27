@@ -1,0 +1,187 @@
+---
+// 少广的交互：正方形田，拖动边长，面积按平方增长。
+// 边长 235 步时面积正好 55225 平方步，就是《九章》少广第十二问。
+import '../styles/jsxgraph.css';
+---
+
+<div class="mc-interactive" data-mc-shaoguang>
+  <div class="mc-board mc-board--square" data-board></div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item">面积 = 边 × 边</span>
+    <span class="mc-legend__item mc-legend__item--blue">235² = 55225</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-s-shaoguang">方边</label>
+    <input id="mc-s-shaoguang" type="range" min="200" max="260" step="1" value="215" data-s />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    拖动滑块改变方边，看面积怎么跟着变；目标是 55225 平方步。
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-shaoguang]');
+
+  if (root) {
+    const boardEl = root.querySelector<HTMLElement>('[data-board]');
+    const slider = root.querySelector<HTMLInputElement>('[data-s]');
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (boardEl && slider && resetButton && readout) {
+      const start = async () => {
+        // JSXGraph 打包后较大，等画板进入视口再加载，避免拖慢首屏
+        const { default: JXG } = await import('jsxgraph');
+
+        const board = JXG.JSXGraph.initBoard(boardEl, {
+          boundingbox: [-28, 272, 278, -44],
+          keepaspectratio: true,
+          axis: true,
+          showCopyright: false,
+          showNavigation: false,
+          pan: { enabled: false },
+          zoom: { enabled: false },
+          defaultAxes: {
+            x: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 50,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+            y: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 50,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+          },
+        });
+
+        const origin = board.create('point', [0, 0], { visible: false, fixed: true });
+        const cornerX = board.create('point', [215, 0], { visible: false, fixed: true });
+        const cornerXY = board.create('point', [215, 215], { visible: false, fixed: true });
+        const cornerY = board.create('point', [0, 215], { visible: false, fixed: true });
+
+        board.create('polygon', [origin, cornerX, cornerXY, cornerY], {
+          fillColor: '#d9b25f',
+          fillOpacity: 0.12,
+          borders: { strokeColor: '#d9b25f', strokeWidth: 2 },
+          vertices: { visible: false },
+          highlight: false,
+        });
+
+        const sideLabel = board.create('text', [107, -18, '方 215 步'], {
+          fontSize: 12,
+          strokeColor: '#d9b25f',
+          anchorX: 'middle',
+          fixed: true,
+          highlight: false,
+        });
+        const areaLabel = board.create('text', [107, 107, '46225 平方步'], {
+          fontSize: 13,
+          strokeColor: '#ece6d6',
+          anchorX: 'middle',
+          fixed: true,
+          highlight: false,
+        });
+
+        board.create('text', [272, -34, '方（步）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'right',
+          fixed: true,
+          highlight: false,
+        });
+        board.create('text', [4, 266, '方（步）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+
+        const TARGET = 55225;
+
+        const sync = () => {
+          const s = Number(slider.value);
+          const area = s * s;
+          const exact = s === 235;
+
+          cornerX.setPosition(JXG.COORDS_BY_USER, [s, 0]);
+          cornerXY.setPosition(JXG.COORDS_BY_USER, [s, s]);
+          cornerY.setPosition(JXG.COORDS_BY_USER, [0, s]);
+
+          sideLabel.setText(`方 ${s} 步`);
+          sideLabel.setPosition(JXG.COORDS_BY_USER, [s / 2, -18]);
+          areaLabel.setText(`${area} 平方步`);
+          areaLabel.setPosition(JXG.COORDS_BY_USER, [s / 2, s / 2]);
+
+          board.update();
+
+          if (exact) {
+            readout.innerHTML = `<strong>235 × 235 = 55225 平方步</strong>——正好是《九章》少广第十二问的答案：方边 235 步。`;
+          } else {
+            const gap = TARGET - area;
+            readout.innerHTML =
+              `方边 ${s} 步 → 面积 <strong>${area} 平方步</strong>，` +
+              (gap > 0 ? `还差 ${gap} 平方步。` : `超出 ${-gap} 平方步。`) +
+              '边长多一步，面积就多出一大块，所以要把边校准到整数。';
+          }
+        };
+
+        slider.addEventListener('input', sync);
+        resetButton.addEventListener('click', () => {
+          slider.value = '215';
+          sync();
+        });
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+
+        const fitBoard = () => {
+          const width = Math.round(boardEl.clientWidth);
+          const height = Math.round(boardEl.clientHeight);
+          if (width === 0 || height === 0 || (width === lastWidth && height === lastHeight)) return;
+          lastWidth = width;
+          lastHeight = height;
+          board.resizeContainer(width, height, true);
+        };
+
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(fitBoard).observe(boardEl);
+        } else {
+          window.addEventListener('resize', fitBoard);
+        }
+        fitBoard();
+
+        sync();
+      };
+
+      // 画板进入视口（提前 200px）再加载
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer.disconnect();
+              start();
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        observer.observe(root);
+      } else {
+        start();
+      }
+    }
+  }
+</script>

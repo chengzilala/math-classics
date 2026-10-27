@@ -1,0 +1,210 @@
+---
+// 盈不足的交互：两条「假设线」在人数-物价平面上的交点。
+// 线 A（人出 8）：物价 = 8 × 人数 − 3；线 B（人出 7）：物价 = 7 × 人数 + 4。
+// 拖动滑块改人数，两条线给出的物价相等时，就是答案。
+import '../styles/jsxgraph.css';
+---
+
+<div class="mc-interactive" data-mc-yingbuzu>
+  <div class="mc-board" data-board></div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item">人出 8：物价 = 8 × 人数 − 3</span>
+    <span class="mc-legend__item mc-legend__item--blue">人出 7：物价 = 7 × 人数 + 4</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-n-yingbuzu">人数</label>
+    <input id="mc-n-yingbuzu" type="range" min="1" max="12" step="1" value="1" data-n />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    拖动滑块改变人数，看看两条线什么时候给出同一个物价。
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-yingbuzu]');
+
+  if (root) {
+    const boardEl = root.querySelector<HTMLElement>('[data-board]');
+    const slider = root.querySelector<HTMLInputElement>('[data-n]');
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (boardEl && slider && resetButton && readout) {
+      const start = async () => {
+        // JSXGraph 打包后较大，等画板进入视口再加载，避免拖慢首屏
+        const { default: JXG } = await import('jsxgraph');
+
+        const Y_MIN = -14;
+        const Y_MAX = 115;
+
+        const board = JXG.JSXGraph.initBoard(boardEl, {
+          boundingbox: [-1.2, Y_MAX, 13, Y_MIN],
+          axis: true,
+          showCopyright: false,
+          showNavigation: false,
+          pan: { enabled: false },
+          zoom: { enabled: false },
+          // 暗色画板：坐标轴与刻度沿用主题的暖灰 / 金色
+          defaultAxes: {
+            x: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: { strokeColor: 'rgba(236,230,214,0.22)', label: { strokeColor: '#8d95a9', fontSize: 11 } },
+            },
+            y: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: { strokeColor: 'rgba(236,230,214,0.22)', label: { strokeColor: '#8d95a9', fontSize: 11 } },
+            },
+          },
+        });
+
+        // 两条假设线
+        const line8 = board.create('line', [[0, -3], [12, 93]], {
+          straightFirst: true,
+          straightLast: true,
+          strokeColor: '#d9b25f',
+          strokeWidth: 2,
+          fixed: true,
+          highlight: false,
+        });
+        const line7 = board.create('line', [[0, 4], [12, 88]], {
+          straightFirst: true,
+          straightLast: true,
+          strokeColor: '#6aa8ff',
+          strokeWidth: 2,
+          fixed: true,
+          highlight: false,
+        });
+
+        board.create('intersection', [line8, line7, 0], {
+          name: '交点',
+          fixed: true,
+          size: 4,
+          strokeColor: '#ece6d6',
+          fillColor: '#d9b25f',
+          showInfobox: false,
+          withLabel: true,
+          label: { offset: [8, -18], fontSize: 13, strokeColor: '#d9b25f' },
+        });
+
+        // 坐标轴说明
+        board.create('text', [11.1, -10, '人数'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          fixed: true,
+          highlight: false,
+        });
+        board.create('text', [-1, 108, '物价（文）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          fixed: true,
+          highlight: false,
+        });
+
+        // 跟随滑块的游标与两个读数点
+        const cursorBottom = board.create('point', [1, Y_MIN], { visible: false, fixed: true });
+        const cursorTop = board.create('point', [1, Y_MAX], { visible: false, fixed: true });
+        board.create('segment', [cursorBottom, cursorTop], {
+          strokeColor: '#d9b25f',
+          strokeWidth: 1,
+          dash: 3,
+          fixed: true,
+          highlight: false,
+        });
+        const marker8 = board.create('point', [1, 5], {
+          size: 4,
+          fixed: true,
+          withLabel: false,
+          showInfobox: false,
+          strokeColor: '#d9b25f',
+          fillColor: '#0d1426',
+        });
+        const marker7 = board.create('point', [1, 11], {
+          size: 4,
+          fixed: true,
+          withLabel: false,
+          showInfobox: false,
+          strokeColor: '#6aa8ff',
+          fillColor: '#6aa8ff',
+        });
+
+        // 两种假设在当前人数下的垂直差距，拖到相交时长度归零
+        board.create('segment', [marker8, marker7], {
+          strokeColor: '#ece6d6',
+          strokeWidth: 3,
+          fixed: true,
+          highlight: false,
+        });
+
+        const sync = () => {
+          const n = Number(slider.value);
+          const price8 = 8 * n - 3;
+          const price7 = 7 * n + 4;
+          const gap = Math.abs(price8 - price7);
+
+          cursorBottom.setPosition(JXG.COORDS_BY_USER, [n, Y_MIN]);
+          cursorTop.setPosition(JXG.COORDS_BY_USER, [n, Y_MAX]);
+          marker8.setPosition(JXG.COORDS_BY_USER, [n, price8]);
+          marker7.setPosition(JXG.COORDS_BY_USER, [n, price7]);
+          board.update();
+
+          if (gap === 0) {
+            readout.innerHTML =
+              `两种出法算出的物价都是 <strong>${price8} 文</strong>，对上了：<strong>7 人，物价 ${price8} 文</strong>。`;
+          } else {
+            readout.innerHTML =
+              `人出 8 → 物价 ${price8} 文；人出 7 → 物价 ${price7} 文；还差 <strong>${gap} 文</strong>。继续拖，让两个物价相等。`;
+          }
+        };
+
+        slider.addEventListener('input', sync);
+        resetButton.addEventListener('click', () => {
+          slider.value = '1';
+          sync();
+        });
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+
+        const fitBoard = () => {
+          const width = Math.round(boardEl.clientWidth);
+          const height = Math.round(boardEl.clientHeight);
+          if (width === 0 || height === 0 || (width === lastWidth && height === lastHeight)) return;
+          lastWidth = width;
+          lastHeight = height;
+          board.resizeContainer(width, height, true);
+        };
+
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(fitBoard).observe(boardEl);
+        } else {
+          window.addEventListener('resize', fitBoard);
+        }
+        fitBoard();
+
+        sync();
+      };
+
+      // 画板进入视口（提前 200px）再加载
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer.disconnect();
+              start();
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        observer.observe(root);
+      } else {
+        start();
+      }
+    }
+  }
+</script>

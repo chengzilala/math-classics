@@ -1,0 +1,151 @@
+---
+import '../styles/global.css';
+import { site } from '../site';
+
+interface Props {
+  title: string;
+  description?: string;
+  full?: boolean;
+}
+
+const { title, description = site.description, full = false } = Astro.props;
+const fullTitle = title === site.name ? title : `${title} · ${site.name}`;
+const canonical = new URL(Astro.url.pathname, site.url).href;
+const ogImage = new URL('/og.png', site.url).href;
+const path = Astro.url.pathname;
+const isHome = path === '/';
+const isPropositions = path.startsWith('/propositions');
+
+const navItems = [
+  {
+    key: 'start',
+    label: '起点',
+    href: isHome ? '#start' : '/#start',
+    active: isHome,
+  },
+  {
+    key: 'propositions',
+    label: '命题',
+    href: isHome ? '#propositions' : '/#propositions',
+    active: !isHome && isPropositions,
+  },
+  {
+    key: 'reading',
+    label: '读法',
+    href: isHome ? '#reading' : '/#reading',
+    active: false,
+  },
+  { key: 'about', label: '关于', href: isHome ? '#about' : '/#about', active: false },
+];
+---
+
+<!doctype html>
+<html lang="zh-CN" class:list={[{ 'mc-html--home': isHome }]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#070b16" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="mc-topbar" data-topbar>
+      <a class="mc-brand" href="/">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="1" y="1" width="30" height="30" rx="4" fill="none" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.2"></rect>
+          <path d="M7 21 L16 7 L25 21 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+          <path d="M7 26 h18" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.2"></path>
+        </svg>
+        <span>{site.name}</span>
+        <span class="mc-brand__latin">SUANJING</span>
+      </a>
+      <nav class="mc-nav" aria-label="站点导航">
+        {
+          navItems.map((item) => (
+            <a
+              href={item.href}
+              data-nav={item.key}
+              class:list={[{ active: item.active }]}
+              aria-current={item.active ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </nav>
+    </header>
+
+    <div class="mc-ruler" aria-hidden="true">
+      <i class="mc-ruler__mark" data-ruler-mark></i>
+    </div>
+
+    <main class:list={['mc-main', { 'mc-main--full': full }]}>
+      <slot />
+    </main>
+
+    <footer class="mc-footer">
+      <p class="mc-footer__big">{site.name}</p>
+      <p>{site.tagline}</p>
+      <p>内容只据公有领域底本整理；原文不改一字，白话与勘误持续修订。</p>
+      <p>
+        <a href={site.errataHref}>{site.errataLabel}</a> · 不收集个人信息 · 无广告
+      </p>
+      <p class="mc-footer__legal">
+        © 2026{' '}
+        <a href="https://chesterlee.cn/" target="_blank" rel="noopener">Chester</a> ·{' '}
+        <a href={site.icp.href} target="_blank" rel="noopener">{site.icp.number}</a>
+      </p>
+    </footer>
+
+    <script>
+      const topbar = document.querySelector<HTMLElement>('[data-topbar]');
+      const mark = document.querySelector<HTMLElement>('[data-ruler-mark]');
+
+      const onScroll = () => {
+        const y = window.scrollY;
+        if (topbar) topbar.classList.toggle('is-scrolled', y > 24);
+
+        if (mark) {
+          const max = document.documentElement.scrollHeight - window.innerHeight;
+          const progress = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
+          mark.style.top = `${progress * 100}%`;
+        }
+      };
+
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+
+      const revealItems = document.querySelectorAll<HTMLElement>('.mc-reveal');
+
+      if (revealItems.length) {
+        if ('IntersectionObserver' in window) {
+          const observer = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                  entry.target.classList.add('is-in');
+                  observer.unobserve(entry.target);
+                }
+              });
+            },
+            { rootMargin: '0px 0px -10% 0px' },
+          );
+
+          revealItems.forEach((item) => observer.observe(item));
+        } else {
+          revealItems.forEach((item) => item.classList.add('is-in'));
+        }
+      }
+    </script>
+  </body>
+</html>

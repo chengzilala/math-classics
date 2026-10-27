@@ -1,0 +1,215 @@
+---
+// 勾股的交互：拖动勾、股两个滑块，直角三角形实时重画，弦长由 √(勾² + 股²) 算出来。
+// 勾三股四时，弦正好是五——《九章》勾股第一问。
+import '../styles/jsxgraph.css';
+---
+
+<div class="mc-interactive" data-mc-gougu>
+  <div class="mc-board mc-board--square" data-board></div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item">勾² + 股² = 弦²</span>
+    <span class="mc-legend__item mc-legend__item--blue">勾三 · 股四 · 弦五</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-g-gougu">勾</label>
+    <input id="mc-g-gougu" type="range" min="1" max="12" step="1" value="6" data-gou />
+    <label for="mc-h-gougu">股</label>
+    <input id="mc-h-gougu" type="range" min="1" max="12" step="1" value="5" data-gu />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    拖动两个滑块改变勾和股，看弦怎么跟着变。
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-gougu]');
+
+  if (root) {
+    const boardEl = root.querySelector<HTMLElement>('[data-board]');
+    const gouSlider = root.querySelector<HTMLInputElement>('[data-gou]');
+    const guSlider = root.querySelector<HTMLInputElement>('[data-gu]');
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (boardEl && gouSlider && guSlider && resetButton && readout) {
+      const start = async () => {
+        // JSXGraph 打包后较大，等画板进入视口再加载，避免拖慢首屏
+        const { default: JXG } = await import('jsxgraph');
+
+        const board = JXG.JSXGraph.initBoard(boardEl, {
+          boundingbox: [-1.5, 13.2, 13.2, -2.6],
+          keepaspectratio: true,
+          axis: true,
+          showCopyright: false,
+          showNavigation: false,
+          pan: { enabled: false },
+          zoom: { enabled: false },
+          defaultAxes: {
+            x: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 2,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+            y: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 2,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+          },
+        });
+
+        const a = board.create('point', [0, 0], { visible: false, fixed: true });
+        const b = board.create('point', [6, 0], { visible: false, fixed: true });
+        const c = board.create('point', [0, 5], { visible: false, fixed: true });
+
+        board.create('polygon', [a, b, c], {
+          fillColor: '#d9b25f',
+          fillOpacity: 0.12,
+          borders: { strokeColor: '#d9b25f', strokeWidth: 2 },
+          vertices: { visible: false },
+          highlight: false,
+        });
+
+        // 直角标记（两段短线段拼成小方角）
+        const ra1 = board.create('point', [0.7, 0], { visible: false, fixed: true });
+        const ra2 = board.create('point', [0.7, 0.7], { visible: false, fixed: true });
+        const ra3 = board.create('point', [0, 0.7], { visible: false, fixed: true });
+        board.create('segment', [ra1, ra2], {
+          strokeColor: '#8d95a9',
+          strokeWidth: 1,
+          fixed: true,
+          highlight: false,
+        });
+        board.create('segment', [ra2, ra3], {
+          strokeColor: '#8d95a9',
+          strokeWidth: 1,
+          fixed: true,
+          highlight: false,
+        });
+
+        const gouLabel = board.create('text', [3, -1.3, '勾 6'], {
+          fontSize: 12,
+          strokeColor: '#d9b25f',
+          anchorX: 'middle',
+          fixed: true,
+          highlight: false,
+        });
+        const guLabel = board.create('text', [-0.8, 2.5, '股 5'], {
+          fontSize: 12,
+          strokeColor: '#d9b25f',
+          anchorX: 'right',
+          fixed: true,
+          highlight: false,
+        });
+        const xianLabel = board.create('text', [3.5, 3, '弦 7.81'], {
+          fontSize: 12,
+          strokeColor: '#6aa8ff',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+
+        board.create('text', [12.4, -1.8, '勾（尺）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'right',
+          fixed: true,
+          highlight: false,
+        });
+        board.create('text', [1.2, 12.6, '股（尺）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+
+        const sync = () => {
+          const g = Number(gouSlider.value);
+          const h = Number(guSlider.value);
+          const square = g * g + h * h;
+          const xian = Math.sqrt(square);
+          const isInteger = Number.isInteger(xian);
+          const shown = isInteger ? String(xian) : xian.toFixed(2);
+
+          b.setPosition(JXG.COORDS_BY_USER, [g, 0]);
+          c.setPosition(JXG.COORDS_BY_USER, [0, h]);
+
+          gouLabel.setText(`勾 ${g}`);
+          gouLabel.setPosition(JXG.COORDS_BY_USER, [g / 2, -1.3]);
+          guLabel.setText(`股 ${h}`);
+          guLabel.setPosition(JXG.COORDS_BY_USER, [-0.8, h / 2]);
+          xianLabel.setText(`弦 ${shown}`);
+          xianLabel.setPosition(JXG.COORDS_BY_USER, [g / 2 + 0.6, h / 2 + 0.6]);
+
+          if (g === 3 && h === 4) {
+            readout.innerHTML = `<strong>勾 3、股 4 → 弦 5 尺</strong>：3² + 4² = 9 + 16 = 25，√25 = 5。勾三股四弦五，正是《九章》勾股第一问。`;
+          } else {
+            readout.innerHTML =
+              `勾 ${g}、股 ${h} → 弦 <strong>${shown} 尺</strong>：${g}² + ${h}² = ${square}，` +
+              (isInteger ? `√${square} = ${shown}，正好是整数。` : `√${square} ≈ ${shown}。`);
+          }
+
+          board.update();
+        };
+
+        gouSlider.addEventListener('input', sync);
+        guSlider.addEventListener('input', sync);
+        resetButton.addEventListener('click', () => {
+          gouSlider.value = '6';
+          guSlider.value = '5';
+          sync();
+        });
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+
+        const fitBoard = () => {
+          const width = Math.round(boardEl.clientWidth);
+          const height = Math.round(boardEl.clientHeight);
+          if (width === 0 || height === 0 || (width === lastWidth && height === lastHeight)) return;
+          lastWidth = width;
+          lastHeight = height;
+          board.resizeContainer(width, height, true);
+        };
+
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(fitBoard).observe(boardEl);
+        } else {
+          window.addEventListener('resize', fitBoard);
+        }
+        fitBoard();
+
+        sync();
+      };
+
+      // 画板进入视口（提前 200px）再加载
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer.disconnect();
+              start();
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        observer.observe(root);
+      } else {
+        start();
+      }
+    }
+  }
+</script>

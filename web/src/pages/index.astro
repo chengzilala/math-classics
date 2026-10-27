@@ -1,0 +1,1617 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../site';
+import { getCollection } from 'astro:content';
+
+const propositions = (await getCollection('propositions')).sort(
+  (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99),
+);
+
+const first = propositions[0];
+const startHref = first ? `/propositions/${first.data.id}/` : '/#about';
+const firstBase = first ? `/propositions/${first.data.id}/` : '/#about';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+const sections = [
+  { id: 'start', index: '01', label: '起点' },
+  { id: 'propositions', index: '02', label: '命题' },
+  { id: 'reading', index: '03', label: '读法' },
+  { id: 'progress', index: '04', label: '开始' },
+  { id: 'about', index: '05', label: '关于' },
+];
+
+const foundations = [
+  { no: 'I', title: '原文', text: '繁体照录，不改一字', href: `${firstBase}#original` },
+  { no: 'II', title: '白话', text: '三步拆开，不用术语', href: `${firstBase}#plain` },
+  { no: 'III', title: '动手', text: '拖动滑块，看见关系', href: `${firstBase}#hands-on` },
+];
+
+const reading = [
+  {
+    title: '原文不改字',
+    text: '繁体照录，只标卷次与题号；底本、许可、校对人逐题登记，随时可回溯。',
+  },
+  {
+    title: '白话三步',
+    text: '先翻成人话，再点出关键运算，最后代回验算。不跳过任何一步推理。',
+  },
+  {
+    title: '动手拖一拖',
+    text: '把题里的关系画成线，拖到两条线相交，答案自己浮出来。鼠标和触屏都能用。',
+  },
+  {
+    title: '三道小练习',
+    text: '认概念、算一算、换个数字再来一次；答错只给提示，不直接给答案。',
+  },
+];
+
+const stats = [
+  { value: '9', label: '条内容线' },
+  { value: '3', label: '分钟一题' },
+  { value: '2000+', label: '年传承' },
+  { value: '0', label: '账号与广告' },
+];
+
+const about = [
+  { title: '只用公版底本', text: '维基文库、影印古籍等已过版权保护期的版本，不用现代点校本与译本。' },
+  { title: '原文不改字', text: '繁体照录，只标卷次与题号；简繁差异只体现在白话里。' },
+  { title: '逐题登记', text: '书名、卷/题号、底本、许可都记在版权台账，随时可回溯。' },
+  { title: '零账号零广告', text: '纯静态站，不接追踪脚本；进度只存在你自己的浏览器里。' },
+];
+---
+
+<Base title={site.name} full>
+  <div class="mc-home" data-home>
+    <aside class="mc-stage" data-stage>
+      <svg
+        class="mc-stage__art"
+        viewBox="0 0 600 900"
+        preserveAspectRatio="xMidYMax slice"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <radialGradient id="mc-stage-glow" cx="30%" cy="42%" r="70%">
+            <stop offset="0" stop-color="#2b4a86" stop-opacity="0.42"></stop>
+            <stop offset="1" stop-color="#070b16" stop-opacity="0"></stop>
+          </radialGradient>
+        </defs>
+
+        <rect width="600" height="900" fill="url(#mc-stage-glow)"></rect>
+
+        <g class="mc-stage__rings">
+          <circle cx="120" cy="700" r="300"></circle>
+          <circle cx="120" cy="700" r="214"></circle>
+          <circle cx="120" cy="700" r="128"></circle>
+        </g>
+
+        <g class="mc-stage__grid">
+          <line x1="0" y1="770" x2="600" y2="770"></line>
+          <line x1="0" y1="820" x2="600" y2="820"></line>
+          <line x1="300" y1="690" x2="300" y2="880"></line>
+          <line x1="470" y1="650" x2="470" y2="880"></line>
+        </g>
+      </svg>
+
+      <div class="mc-stage__scenes" aria-hidden="true">
+        <figure class="mc-stage__scene is-on" data-scene="start">
+          <figcaption>勾三 · 股四 · 弦五</figcaption>
+          <svg viewBox="0 0 520 200">
+            <path class="mc-draw" d="M30 50 L30 168 L330 168 Z"></path>
+            <path class="mc-draw mc-draw--late" d="M30 146 L54 146 L54 168"></path>
+            <g class="mc-scene__dots">
+              <circle cx="30" cy="50" r="3.4"></circle>
+              <circle cx="30" cy="168" r="3.4"></circle>
+              <circle class="is-blue" cx="330" cy="168" r="3.4"></circle>
+            </g>
+            <text x="16" y="115" text-anchor="end">勾</text>
+            <text x="180" y="194" text-anchor="middle">股</text>
+            <text x="256" y="94" transform="rotate(-24 256 94)">弦</text>
+          </svg>
+        </figure>
+
+        <figure class="mc-stage__scene" data-scene="propositions">
+          <figcaption>方田 · 广十五步 · 从十六步</figcaption>
+          <svg viewBox="0 0 520 200">
+            <rect class="mc-draw mc-fill" x="30" y="36" width="300" height="130"></rect>
+            <g class="mc-draw-lines">
+              <line x1="105" y1="36" x2="105" y2="166"></line>
+              <line x1="180" y1="36" x2="180" y2="166"></line>
+              <line x1="255" y1="36" x2="255" y2="166"></line>
+              <line x1="30" y1="79" x2="330" y2="79"></line>
+              <line x1="30" y1="122" x2="330" y2="122"></line>
+            </g>
+            <text x="180" y="194" text-anchor="middle">广 十五步</text>
+            <text x="18" y="101" text-anchor="middle" transform="rotate(-90 18 101)">从 十六步</text>
+            <text class="mc-scene__note" x="354" y="96">240 平方步</text>
+            <text class="mc-scene__note" x="354" y="118">即一亩</text>
+          </svg>
+        </figure>
+
+        <figure class="mc-stage__scene" data-scene="reading">
+          <figcaption>一题五段 · 原文到出处</figcaption>
+          <svg viewBox="0 0 520 200">
+            <g class="mc-scene__rows">
+              <text x="30" y="46">01</text>
+              <line class="mc-draw" x1="64" y1="42" x2="392" y2="42"></line>
+              <text x="30" y="76">02</text>
+              <line class="mc-draw" x1="64" y1="72" x2="356" y2="72"></line>
+              <text x="30" y="106">03</text>
+              <line class="mc-draw" x1="64" y1="102" x2="320" y2="102"></line>
+              <text x="30" y="136">04</text>
+              <line class="mc-draw" x1="64" y1="132" x2="284" y2="132"></line>
+              <text x="30" y="166">05</text>
+              <line class="mc-draw" x1="64" y1="162" x2="248" y2="162"></line>
+            </g>
+          </svg>
+        </figure>
+
+        <figure class="mc-stage__scene" data-scene="progress">
+          <figcaption>两次假设 · 一个交点</figcaption>
+          <svg viewBox="0 0 520 200">
+            <line class="mc-draw" x1="30" y1="162" x2="490" y2="162"></line>
+            <line class="mc-draw mc-draw--late" x1="40" y1="48" x2="330" y2="162"></line>
+            <line class="mc-draw mc-draw--late" x1="40" y1="162" x2="330" y2="48"></line>
+            <g class="mc-scene__dots">
+              <circle class="is-blue" cx="185" cy="105" r="3.6"></circle>
+            </g>
+            <text x="344" y="58">人出八 · 盈三</text>
+            <text x="344" y="158">人出七 · 不足四</text>
+          </svg>
+        </figure>
+
+        <figure class="mc-stage__scene" data-scene="about">
+          <figcaption>公版底本 · 逐题登记</figcaption>
+          <svg viewBox="0 0 520 200">
+            <g class="mc-scene__rows">
+              <text x="30" y="48">书名</text>
+              <line class="mc-draw" x1="84" y1="44" x2="338" y2="44"></line>
+              <text x="30" y="84">卷次</text>
+              <line class="mc-draw" x1="84" y1="80" x2="296" y2="80"></line>
+              <text x="30" y="120">底本</text>
+              <line class="mc-draw" x1="84" y1="116" x2="318" y2="116"></line>
+              <text x="30" y="156">许可</text>
+              <line class="mc-draw" x1="84" y1="152" x2="268" y2="152"></line>
+            </g>
+            <rect class="mc-draw mc-draw--late" x="392" y="52" width="82" height="82" rx="3"></rect>
+            <text class="mc-scene__note" x="433" y="98" text-anchor="middle">公版</text>
+          </svg>
+        </figure>
+      </div>
+
+      <div class="mc-stage__inner">
+        <p class="mc-stage__latin">NINE CHAPTERS · 九章算术</p>
+        <h1 class="mc-stage__title">{site.name}</h1>
+        <p class="mc-stage__tagline">{site.tagline}</p>
+        <p class="mc-stage__desc">
+          九道古题，每题拆成原文、白话、动手、练习；三分钟走完一题。
+        </p>
+      </div>
+
+      <nav class="mc-stage__rail" aria-label="首页分区">
+        {
+          sections.map((section) => (
+            <a
+              class="mc-stage__dot-link"
+              href={`#${section.id}`}
+              data-dot={section.index}
+              data-label={section.label}
+              aria-label={`跳到「${section.label}」`}
+            >
+              <span></span>
+            </a>
+          ))
+        }
+      </nav>
+
+      <div class="mc-stage__foot">
+        <p class="mc-stage__now">
+          <span data-stage-index>01</span>
+          <i aria-hidden="true"></i>
+          <span data-stage-label>起点</span>
+        </p>
+        <p class="mc-stage__hint" data-stage-hint>
+          <span data-hint-text>向下滚动</span>
+          <i aria-hidden="true"></i>
+        </p>
+      </div>
+    </aside>
+
+    <div class="mc-panes" data-panes>
+      <section id="start" class="mc-pane" data-pane="01" data-label="起点">
+        <header class="mc-pane__head">
+          <p class="mc-eyebrow">FOUNDATIONS · 起点</p>
+          <h2 class="mc-pane__title">从一道<em>古题</em>开始</h2>
+          <p class="mc-lede">
+            《九章算术》里没有公式，只有问题和答案。我们把每题拆成五段：你读、你拖、你答，最后能讲给别人听。
+          </p>
+        </header>
+
+        <div class="mc-minis">
+          {
+            foundations.map((item) => (
+              <a class="mc-mini" href={item.href}>
+                <span class="mc-mini__no" aria-hidden="true">{item.no}</span>
+                <b>{item.title}</b>
+                <span class="mc-mini__text">{item.text}</span>
+                <span class="mc-mini__cta">阅读 →</span>
+              </a>
+            ))
+          }
+        </div>
+
+        <dl class="mc-numbers">
+          {
+            stats.map((item) => (
+              <div>
+                <dt>{item.value}</dt>
+                <dd>{item.label}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+
+      <section id="propositions" class="mc-pane" data-pane="02" data-label="命题">
+        <header class="mc-pane__head">
+          <p class="mc-eyebrow">THE NINE · 命题</p>
+          <h2 class="mc-pane__title">九题，<em>九张图</em></h2>
+          <p class="mc-lede">
+            九卷各挑一道最直观的题：盈不足、方田、粟米、勾股，再到衰分、少广、商功、均输、方程。每题一页，读完就能讲给别人听。
+          </p>
+        </header>
+
+        <ul class="mc-cards">
+          {
+            propositions.map(({ data }, index) => {
+              const originalLine = data.original.split('\n')[0].trim();
+              return (
+                <li class="mc-cardwrap">
+                  <a class="mc-card" href={`/propositions/${data.id}/`} data-proposition-id={data.id}>
+                    <span class="mc-card__no" aria-hidden="true">{pad(index + 1)}</span>
+                    <span class="mc-card__meta">
+                      <span class="mc-card__line">
+                        {data.line} · {data.chapter}
+                      </span>
+                      <span class="mc-card__done" data-card-done hidden>
+                        已做完
+                      </span>
+                    </span>
+                    <span class="mc-card__title">{data.title}</span>
+                    <span class="mc-card__desc">{data.summary}</span>
+                    <span class="mc-card__cta">开始 3 分钟 →</span>
+                  </a>
+                  <aside class="mc-card__preview" aria-hidden="true">
+                    <div class="mc-preview__block">
+                      <span class="mc-preview__tag">原文</span>
+                      <p class="mc-preview__original">{originalLine}</p>
+                    </div>
+                    <div class="mc-preview__block mc-preview__block--note">
+                      <span class="mc-preview__tag">数学意义</span>
+                      <p class="mc-preview__text">{data.significance}</p>
+                    </div>
+                    {
+                      data.related.length > 0 && (
+                        <div class="mc-preview__related">
+                          <span class="mc-preview__tag">引用命题</span>
+                          <p class="mc-preview__chips">
+                            {data.related.map((item) => (
+                              <span class="mc-preview__chip">{item.label}</span>
+                            ))}
+                          </p>
+                        </div>
+                      )
+                    }
+                  </aside>
+                </li>
+              );
+            })
+          }
+        </ul>
+      </section>
+
+      <section id="reading" class="mc-pane" data-pane="03" data-label="读法">
+        <header class="mc-pane__head">
+          <p class="mc-eyebrow">HOW TO READ · 读法</p>
+          <h2 class="mc-pane__title">一题五段，<em>看懂</em>为止</h2>
+          <p class="mc-lede">
+            古书难读，多半难在句读和术语，不在数学本身。读一段、动一次手，三分钟走完一题。
+          </p>
+        </header>
+
+        <ol class="mc-rules">
+          {
+            reading.map((item) => (
+              <li>
+                <b>{item.title}</b>
+                <span>{item.text}</span>
+              </li>
+            ))
+          }
+        </ol>
+
+        <blockquote class="mc-pane__quote">
+          「今有共買物，人出八，盈三；人出七，不足四。」
+          <cite>《九章算术》卷七 · 盈不足</cite>
+        </blockquote>
+      </section>
+
+      <section id="progress" class="mc-pane" data-pane="04" data-label="开始">
+        <header class="mc-pane__head">
+          <p class="mc-eyebrow">START · 开始</p>
+          <h2 class="mc-pane__title">从<em>盈不足</em>开始</h2>
+          <p class="mc-lede">
+            两次假设，一道古题。拖动滑块，看两条线在第七个人那里相遇。
+          </p>
+        </header>
+
+        <div class="mc-progress" data-progress data-total={propositions.length}>
+          <div class="mc-progress__head">
+            <span><b data-progress-count>0</b> / {propositions.length} 题已做完</span>
+            <button type="button" class="mc-btn" data-progress-clear>清空进度</button>
+          </div>
+          <div
+            class="mc-progress__bar"
+            role="progressbar"
+            aria-label="做题进度"
+            aria-valuemin="0"
+            aria-valuemax={propositions.length}
+            aria-valuenow="0"
+            data-progress-bar
+          >
+            <i data-progress-fill></i>
+          </div>
+          <p class="mc-progress__note">进度只记在这台设备的浏览器里，不上传、不识别你。</p>
+        </div>
+
+        <div class="mc-actions">
+          <a class="is-primary" href={startHref}>进入命题 →</a>
+          <a href="#about">了解本站</a>
+        </div>
+      </section>
+
+      <section id="about" class="mc-pane" data-pane="05" data-label="关于">
+        <header class="mc-pane__head">
+          <p class="mc-eyebrow">ABOUT · 关于</p>
+          <h2 class="mc-pane__title">关于<em>算经</em></h2>
+          <p class="mc-lede">
+            把已经进入<strong>公有领域</strong>的中国古算书，拆成「原文 → 白话 → 动手 → 练习」；每题三分钟，读完能讲给别人听。
+          </p>
+        </header>
+
+        <ol class="mc-rules">
+          {
+            about.map((item) => (
+              <li>
+                <b>{item.title}</b>
+                <span>{item.text}</span>
+              </li>
+            ))
+          }
+        </ol>
+
+        <div id="errata" class="mc-about">
+          <p class="mc-about__text">
+            发现错漏？本站仍在完善，勘误入口会在仓库公开后补上；每条修订都会记在命题页的「最后更新」里。
+          </p>
+          <a class="mc-about__cta" href={startHref}>从第一题开始 →</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</Base>
+
+<style is:global>
+  :root {
+    --mc-topbar-h: 64px;
+  }
+
+  main.mc-main--full {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 首页分栏：左侧舞台固定，右侧逐段滚动 */
+  .mc-home {
+    display: grid;
+    grid-template-columns: minmax(0, 46%) minmax(0, 54%);
+    align-items: start;
+  }
+
+  .mc-stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(18px, 3vh, 30px);
+    padding: calc(var(--mc-topbar-h) + 32px) clamp(24px, 4vw, 64px) clamp(210px, 30vh, 300px);
+    border-right: 1px solid var(--mc-line);
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .mc-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      46rem 46rem at var(--mc-mx, 30%) var(--mc-my, 40%),
+      rgba(217, 178, 95, 0.09),
+      transparent 60%
+    );
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .mc-stage:hover::before {
+    opacity: 1;
+  }
+
+  .mc-stage__art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    transform: translateY(calc(var(--mc-stage-shift, 0) * -1px));
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 56%,
+      rgba(0, 0, 0, 0.35) 73%,
+      #000 90%
+    );
+    mask-image: linear-gradient(to bottom, transparent 56%, rgba(0, 0, 0, 0.35) 73%, #000 90%);
+  }
+
+  .mc-stage__rings circle {
+    fill: none;
+    stroke: rgba(106, 168, 255, 0.13);
+    stroke-width: 1;
+    stroke-dasharray: 2 10;
+  }
+
+  .mc-stage__grid line {
+    stroke: rgba(236, 230, 214, 0.05);
+    stroke-width: 1;
+  }
+
+  /* 左栏场景：随右侧分区切换，重画各自图形 */
+  .mc-stage__scenes {
+    position: absolute;
+    left: clamp(24px, 4vw, 64px);
+    right: clamp(24px, 4vw, 64px);
+    bottom: clamp(52px, 8vh, 88px);
+    height: clamp(170px, 23vh, 232px);
+    pointer-events: none;
+  }
+
+  .mc-stage__scene {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.45s ease, visibility 0.45s ease;
+  }
+
+  .mc-stage__scene.is-on {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .mc-stage__scene figcaption {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--mc-muted);
+    transition: color 0.4s ease;
+  }
+
+  .mc-stage__scene.is-on figcaption {
+    color: var(--mc-accent);
+  }
+
+  .mc-stage__scene svg {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .mc-stage__scene path,
+  .mc-stage__scene line,
+  .mc-stage__scene rect {
+    fill: none;
+    stroke: rgba(217, 178, 95, 0.75);
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .mc-stage__scene rect.mc-fill {
+    fill: rgba(217, 178, 95, 0.05);
+  }
+
+  .mc-stage__scene text {
+    fill: var(--mc-muted);
+    stroke: none;
+    font-family: var(--mc-serif);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+  }
+
+  .mc-stage__scene .mc-scene__note {
+    font-family: var(--mc-sans);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    fill: rgba(236, 230, 214, 0.5);
+  }
+
+  .mc-scene__dots circle {
+    fill: var(--mc-accent);
+    stroke: none;
+    opacity: 0;
+    transition: opacity 0.4s ease 0.9s;
+  }
+
+  .mc-scene__dots circle.is-blue {
+    fill: var(--mc-blue);
+  }
+
+  .mc-stage__scene.is-on .mc-scene__dots circle {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(217, 178, 95, 0.65));
+  }
+
+  .mc-stage__scene.is-on .mc-scene__dots circle.is-blue {
+    filter: drop-shadow(0 0 6px rgba(106, 168, 255, 0.7));
+  }
+
+  .mc-draw {
+    stroke-dasharray: 900;
+    stroke-dashoffset: 900;
+  }
+
+  .mc-stage__scene.is-on .mc-draw {
+    animation: mc-scene-draw 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .mc-draw-lines line {
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+  }
+
+  .mc-stage__scene.is-on .mc-draw-lines line {
+    animation: mc-scene-draw 0.9s cubic-bezier(0.4, 0, 0.2, 1) 0.5s forwards;
+  }
+
+  .mc-stage__scene.is-on .mc-draw--late {
+    animation-delay: 0.35s;
+  }
+
+  .mc-stage__scene.is-on .mc-scene__rows .mc-draw:nth-of-type(2) {
+    animation-delay: 0.12s;
+  }
+
+  .mc-stage__scene.is-on .mc-scene__rows .mc-draw:nth-of-type(3) {
+    animation-delay: 0.26s;
+  }
+
+  .mc-stage__scene.is-on .mc-scene__rows .mc-draw:nth-of-type(4) {
+    animation-delay: 0.4s;
+  }
+
+  .mc-stage__scene.is-on .mc-scene__rows .mc-draw:nth-of-type(5) {
+    animation-delay: 0.54s;
+  }
+
+  @keyframes mc-scene-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .mc-stage__inner {
+    position: relative;
+    max-width: 30rem;
+  }
+
+  .mc-stage__latin {
+    margin: 0;
+    font-size: clamp(10px, 0.9vw, 12px);
+    letter-spacing: 0.42em;
+    color: var(--mc-accent);
+  }
+
+  .mc-stage__title {
+    margin: 1.1rem 0 0;
+    font-family: var(--mc-serif);
+    font-weight: 700;
+    font-size: clamp(84px, 11.5vw, 176px);
+    line-height: 1;
+    letter-spacing: 0.12em;
+    padding-left: 0.12em;
+    background: linear-gradient(100deg, #fff6df 6%, var(--mc-accent) 42%, #8a6a2c 62%, #fff6df 92%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 12px 44px rgba(217, 178, 95, 0.22));
+    animation: mc-stage-shine 12s linear infinite;
+  }
+
+  @keyframes mc-stage-shine {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    100% {
+      background-position: 200% 50%;
+    }
+  }
+
+  .mc-stage__tagline {
+    margin: clamp(14px, 2.4vh, 26px) 0 0;
+    font-size: clamp(12px, 1.05vw, 15px);
+    letter-spacing: 0.3em;
+    padding-left: 0.3em;
+    color: var(--mc-ink-soft);
+  }
+
+  .mc-stage__desc {
+    margin: 1rem 0 0;
+    max-width: 26rem;
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--mc-muted);
+  }
+
+  .mc-stage__rail {
+    position: absolute;
+    right: clamp(18px, 2.4vw, 36px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .mc-stage__dot-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 22px;
+    height: 22px;
+  }
+
+  .mc-stage__dot-link span {
+    width: 5px;
+    height: 5px;
+    border: 1px solid rgba(236, 230, 214, 0.42);
+    border-radius: 50%;
+    transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+  }
+
+  .mc-stage__dot-link::after {
+    content: attr(data-label);
+    position: absolute;
+    right: 26px;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    white-space: nowrap;
+    color: var(--mc-accent);
+    opacity: 0;
+    transform: translateX(4px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+  }
+
+  .mc-stage__dot-link:hover::after,
+  .mc-stage__dot-link.is-on::after {
+    opacity: 1;
+    transform: none;
+  }
+
+  .mc-stage__dot-link.is-on span {
+    background: var(--mc-accent);
+    border-color: var(--mc-accent);
+    transform: scale(1.5);
+    box-shadow: 0 0 12px rgba(217, 178, 95, 0.6);
+  }
+
+  .mc-stage__foot {
+    position: absolute;
+    left: clamp(24px, 4vw, 64px);
+    right: clamp(24px, 4vw, 64px);
+    bottom: clamp(24px, 4vh, 40px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .mc-stage__now {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--mc-muted);
+  }
+
+  .mc-stage__now span:first-child {
+    font-family: var(--mc-serif);
+    font-size: 13px;
+    color: var(--mc-accent);
+  }
+
+  .mc-stage__now i {
+    width: 28px;
+    height: 1px;
+    background: var(--mc-line-strong);
+  }
+
+  .mc-stage__hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--mc-muted);
+  }
+
+  .mc-stage__hint i {
+    width: 40px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--mc-accent), transparent);
+    transform-origin: left;
+    animation: mc-stage-hint 2.6s ease-in-out infinite;
+  }
+
+  @keyframes mc-stage-hint {
+    0% {
+      transform: scaleX(0.2);
+    }
+
+    50% {
+      transform: scaleX(1);
+    }
+
+    100% {
+      transform: scaleX(1);
+      opacity: 0;
+    }
+  }
+
+  .mc-stage.is-end .mc-stage__hint {
+    color: var(--mc-accent);
+  }
+
+  .mc-stage.is-end .mc-stage__hint i {
+    animation: none;
+    transform: scaleX(1);
+    opacity: 0.5;
+  }
+
+  /* 右侧滚动区 */
+  .mc-panes {
+    min-width: 0;
+  }
+
+  .mc-pane {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(20px, 3.4vh, 40px);
+    min-height: 100vh;
+    padding: calc(var(--mc-topbar-h) + clamp(24px, 5vh, 52px)) clamp(24px, 4.4vw, 64px)
+      clamp(32px, 6vh, 64px);
+    border-bottom: 1px solid var(--mc-line);
+  }
+
+  .mc-pane__head {
+    max-width: 38rem;
+  }
+
+  .mc-pane__title {
+    margin: 0;
+    font-family: var(--mc-serif);
+    font-weight: 700;
+    font-size: clamp(38px, 4.2vw, 62px);
+    line-height: 1.16;
+    letter-spacing: 0.02em;
+  }
+
+  .mc-pane__title em {
+    font-style: normal;
+    color: var(--mc-accent);
+  }
+
+  .mc-pane__head .mc-lede {
+    margin-top: 16px;
+    max-width: 30rem;
+  }
+
+  .mc-pane.is-active .mc-pane__head {
+    animation: mc-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .mc-pane.is-active .mc-mini,
+  .mc-pane.is-active .mc-card,
+  .mc-pane.is-active .mc-rules li,
+  .mc-pane.is-active .mc-numbers div,
+  .mc-pane.is-active .mc-progress,
+  .mc-pane.is-active .mc-actions,
+  .mc-pane.is-active .mc-pane__quote,
+  .mc-pane.is-active .mc-about {
+    animation: mc-rise 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .mc-pane.is-active .mc-mini:nth-child(2),
+  .mc-pane.is-active .mc-rules li:nth-child(2),
+  .mc-pane.is-active .mc-numbers div:nth-child(2) {
+    animation-delay: 0.08s;
+  }
+
+  .mc-pane.is-active .mc-mini:nth-child(3),
+  .mc-pane.is-active .mc-rules li:nth-child(3),
+  .mc-pane.is-active .mc-numbers div:nth-child(3) {
+    animation-delay: 0.16s;
+  }
+
+  .mc-pane.is-active .mc-rules li:nth-child(4),
+  .mc-pane.is-active .mc-numbers div:nth-child(4) {
+    animation-delay: 0.24s;
+  }
+
+  .mc-pane.is-active .mc-progress {
+    animation-delay: 0.1s;
+  }
+
+  .mc-pane.is-active .mc-actions {
+    animation-delay: 0.18s;
+  }
+
+  .mc-pane.is-active .mc-about {
+    animation-delay: 0.24s;
+  }
+
+  @keyframes mc-rise {
+    from {
+      opacity: 0;
+      transform: translateY(22px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* 起点三卡（原文 / 白话 / 动手） */
+  .mc-minis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .mc-mini {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 150px;
+    padding: 18px 16px 14px;
+    border: 1px solid var(--mc-line);
+    border-radius: 4px;
+    background: var(--mc-panel);
+    color: inherit;
+    overflow: hidden;
+    transition: border-color 0.35s ease, background 0.35s ease, transform 0.35s ease;
+  }
+
+  .mc-mini::before,
+  .mc-mini::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 0 solid var(--mc-accent);
+    opacity: 0.55;
+    transition: opacity 0.35s ease;
+  }
+
+  .mc-mini::before {
+    left: 5px;
+    top: 5px;
+    border-width: 1px 0 0 1px;
+  }
+
+  .mc-mini::after {
+    right: 5px;
+    bottom: 5px;
+    border-width: 0 1px 1px 0;
+  }
+
+  .mc-mini:hover {
+    border-color: var(--mc-accent);
+    background: rgba(217, 178, 95, 0.07);
+    transform: translateY(-3px);
+  }
+
+  .mc-mini:hover::before,
+  .mc-mini:hover::after {
+    opacity: 1;
+  }
+
+  .mc-mini__no {
+    position: absolute;
+    right: 12px;
+    top: 6px;
+    font-family: var(--mc-serif);
+    font-size: 34px;
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(217, 178, 95, 0.35);
+  }
+
+  .mc-mini b {
+    font-family: var(--mc-serif);
+    font-size: 19px;
+    font-weight: 600;
+  }
+
+  .mc-mini__text {
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--mc-muted);
+  }
+
+  .mc-mini__cta {
+    margin-top: auto;
+    padding-top: 10px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--mc-accent);
+  }
+
+  /* 数字横排 */
+  .mc-numbers {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--mc-line);
+  }
+
+  .mc-numbers div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .mc-numbers dt {
+    font-family: var(--mc-serif);
+    font-size: clamp(22px, 2.2vw, 30px);
+    line-height: 1;
+    color: var(--mc-accent);
+  }
+
+  .mc-numbers dd {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--mc-muted);
+  }
+
+  /* 命题卡片：右栏三列（九题三行，控制在一屏内） */
+  .mc-pane .mc-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+  }
+
+  .mc-pane .mc-card {
+    min-height: 138px;
+    padding: 14px 15px;
+    gap: 0.2rem;
+  }
+
+  .mc-pane .mc-card__meta {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  .mc-pane .mc-card__line {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    line-height: 1.5;
+  }
+
+  .mc-pane .mc-card__title {
+    margin-top: 2px;
+    font-size: 21px;
+  }
+
+  .mc-pane .mc-card__desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+
+  .mc-pane .mc-card__cta {
+    padding-top: 6px;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+  }
+
+  .mc-pane .mc-card__no {
+    top: -2px;
+    right: 10px;
+    font-size: 46px;
+  }
+
+  /* 命题卡悬停：浮出「原文 + 数学意义 + 引用命题」预览，其余卡片压暗 */
+  .mc-cardwrap {
+    position: relative;
+    transition: opacity 0.35s ease;
+  }
+
+  .mc-cards:hover .mc-cardwrap:not(:hover) {
+    opacity: 0.4;
+  }
+
+  .mc-card__preview {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 12px);
+    z-index: 20;
+    width: min(340px, calc(100vw - 48px));
+    padding: 16px 18px 14px;
+    border: 1px solid rgba(217, 178, 95, 0.55);
+    border-radius: 4px;
+    background:
+      radial-gradient(120% 80% at 12% 0%, rgba(217, 178, 95, 0.1), transparent 60%),
+      rgba(10, 15, 27, 0.97);
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.6), 0 0 26px rgba(217, 178, 95, 0.08);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 0.28s ease, transform 0.28s ease, visibility 0.28s ease;
+    pointer-events: none;
+  }
+
+  /* 右列向右展开会溢出视口，改为右对齐 */
+  .mc-cardwrap:nth-child(3n) .mc-card__preview {
+    left: auto;
+    right: 0;
+  }
+
+  /* 最后一排改为向上浮出，避免顶出屏幕 */
+  .mc-cardwrap:nth-child(n + 7) .mc-card__preview {
+    top: auto;
+    bottom: calc(100% + 12px);
+    transform: translateY(6px);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .mc-cardwrap:hover .mc-card__preview,
+    .mc-cardwrap:focus-within .mc-card__preview {
+      opacity: 1;
+      visibility: visible;
+      transform: none;
+    }
+  }
+
+  .mc-preview__block + .mc-preview__block {
+    margin-top: 12px;
+  }
+
+  .mc-preview__tag {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--mc-accent);
+  }
+
+  .mc-preview__original {
+    margin: 0;
+    font-family: var(--mc-serif);
+    font-size: 15px;
+    line-height: 1.9;
+    letter-spacing: 0.04em;
+    color: #e6dcc4;
+  }
+
+  .mc-preview__block--note {
+    padding: 11px 13px;
+    border-left: 2px solid var(--mc-accent);
+    background: rgba(217, 178, 95, 0.08);
+  }
+
+  .mc-preview__text {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.85;
+    color: var(--mc-ink-soft);
+  }
+
+  .mc-preview__related {
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid var(--mc-line);
+  }
+
+  .mc-preview__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .mc-preview__chip {
+    padding: 2px 11px;
+    border: 1px solid rgba(217, 178, 95, 0.5);
+    border-radius: 999px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: #e2d3ae;
+  }
+
+  /* 读法清单 */
+  .mc-rules {
+    list-style: none;
+    counter-reset: rule;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    border-top: 1px solid var(--mc-line);
+    padding-top: 18px;
+  }
+
+  .mc-rules li {
+    position: relative;
+    padding: 0 0 0 40px;
+    counter-increment: rule;
+  }
+
+  .mc-rules li::before {
+    content: counter(rule, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 2px;
+    font-family: var(--mc-serif);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--mc-accent);
+  }
+
+  .mc-rules b {
+    display: block;
+    font-family: var(--mc-serif);
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .mc-rules span {
+    display: block;
+    margin-top: 5px;
+    font-size: 12.5px;
+    line-height: 1.8;
+    color: var(--mc-muted);
+  }
+
+  .mc-pane__quote {
+    margin: 0;
+    padding: 16px 20px;
+    border-left: 2px solid var(--mc-accent);
+    background: var(--mc-accent-soft);
+    font-family: var(--mc-serif);
+    font-size: 15px;
+    line-height: 1.9;
+    color: #d8d0bb;
+  }
+
+  .mc-pane__quote cite {
+    display: block;
+    margin-top: 8px;
+    font-family: var(--mc-sans);
+    font-style: normal;
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    color: var(--mc-muted);
+  }
+
+  /* 关于段：勘误说明 + 入口 */
+  .mc-about {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 28px;
+    padding: 16px 20px;
+    border: 1px solid var(--mc-line);
+    border-left: 2px solid var(--mc-accent);
+    background: var(--mc-accent-soft);
+  }
+
+  .mc-about__text {
+    margin: 0;
+    max-width: 34rem;
+    font-size: 12.5px;
+    line-height: 1.85;
+    color: var(--mc-ink-soft);
+  }
+
+  .mc-about__cta {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: var(--mc-accent);
+    white-space: nowrap;
+  }
+
+  /* 按钮 */
+  .mc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .mc-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 1.5rem;
+    border: 1px solid var(--mc-line-strong);
+    border-radius: 3px;
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    color: var(--mc-ink);
+    transition: border-color 0.3s ease, color 0.3s ease, background 0.3s ease;
+  }
+
+  .mc-actions a:hover {
+    border-color: var(--mc-accent);
+    color: var(--mc-accent);
+  }
+
+  .mc-actions a.is-primary {
+    border-color: var(--mc-accent);
+    background: var(--mc-accent-soft);
+    color: #fff;
+  }
+
+  .mc-actions a.is-primary:hover {
+    background: rgba(217, 178, 95, 0.26);
+    color: #fff;
+  }
+
+  .mc-pane .mc-progress {
+    margin: 0;
+    max-width: none;
+  }
+
+  /* 整页吸附：每一次滚动落到下一段 */
+  @media (min-width: 960px) and (min-height: 700px) {
+    html.mc-html--home {
+      scroll-snap-type: y mandatory;
+    }
+
+    .mc-pane {
+      scroll-snap-align: start;
+    }
+
+    html.mc-html--home .mc-footer {
+      scroll-snap-align: start;
+    }
+  }
+
+  @media (max-width: 959px) {
+    .mc-home {
+      display: block;
+    }
+
+    .mc-stage {
+      position: relative;
+      height: auto;
+      min-height: 62vh;
+      padding: calc(var(--mc-topbar-h) + 48px) var(--mc-gutter) 56px;
+      border-right: 0;
+      border-bottom: 1px solid var(--mc-line);
+      justify-content: center;
+    }
+
+    .mc-stage__title {
+      font-size: clamp(76px, 22vw, 130px);
+    }
+
+    /* 窄屏留白有限，装饰线描与左栏场景不参与排版，避免压到文字 */
+    .mc-stage__art,
+    .mc-stage__scenes {
+      display: none;
+    }
+
+    .mc-stage__rail {
+      display: none;
+    }
+
+    .mc-stage__foot {
+      left: var(--mc-gutter);
+      right: var(--mc-gutter);
+    }
+
+    .mc-pane {
+      min-height: 0;
+      padding: clamp(56px, 12vh, 96px) var(--mc-gutter);
+      gap: 26px;
+    }
+
+    .mc-pane__title {
+      font-size: clamp(32px, 8vw, 46px);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .mc-minis {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .mc-mini {
+      min-height: 0;
+    }
+
+    .mc-numbers {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .mc-pane .mc-cards,
+    .mc-rules {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .mc-actions a {
+      min-height: 44px;
+      padding: 0 1.1rem;
+      font-size: 12px;
+    }
+
+    .mc-stage__desc {
+      font-size: 12.5px;
+    }
+  }
+
+  /* 矮屏笔记本：压缩段内间距，保证每段仍能一屏放完（不被吸附卡住） */
+  @media (min-width: 960px) and (max-height: 820px) {
+    .mc-pane {
+      gap: clamp(12px, 2.2vh, 24px);
+      padding-top: calc(var(--mc-topbar-h) + 18px);
+      padding-bottom: clamp(16px, 3vh, 30px);
+    }
+
+    .mc-pane__title {
+      font-size: clamp(30px, 3.6vw, 52px);
+    }
+
+    .mc-pane__head .mc-lede {
+      margin-top: 8px;
+      font-size: 13.5px;
+      line-height: 1.75;
+    }
+
+    .mc-pane .mc-card {
+      min-height: 118px;
+      padding: 11px 12px;
+    }
+
+    .mc-pane .mc-card__title {
+      font-size: 18px;
+    }
+
+    .mc-pane .mc-card__desc {
+      font-size: 11px;
+    }
+
+    .mc-pane .mc-card__no {
+      font-size: 38px;
+      top: 0;
+    }
+
+    .mc-mini {
+      min-height: 124px;
+      padding: 14px 14px 12px;
+    }
+
+    .mc-numbers {
+      padding-top: 12px;
+    }
+
+    .mc-pane .mc-progress {
+      padding: 14px 16px;
+    }
+
+    .mc-pane__quote {
+      padding: 12px 16px;
+      font-size: 14px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mc-stage__hint i,
+    .mc-stage__title {
+      animation: none;
+    }
+
+    .mc-draw,
+    .mc-draw-lines line {
+      animation: none;
+      stroke-dashoffset: 0;
+    }
+
+    .mc-scene__dots circle {
+      opacity: 1;
+    }
+
+    .mc-pane.is-active .mc-pane__head,
+    .mc-pane.is-active .mc-mini,
+    .mc-pane.is-active .mc-card,
+    .mc-pane.is-active .mc-rules li,
+    .mc-pane.is-active .mc-numbers div,
+    .mc-pane.is-active .mc-progress,
+    .mc-pane.is-active .mc-actions,
+    .mc-pane.is-active .mc-pane__quote,
+    .mc-pane.is-active .mc-about {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  import { clearProgress, readProgress } from '../scripts/progress';
+
+  const panes = Array.from(document.querySelectorAll<HTMLElement>('[data-pane]'));
+  const dots = Array.from(document.querySelectorAll<HTMLElement>('[data-dot]'));
+  const stage = document.querySelector<HTMLElement>('[data-stage]');
+  const stageIndex = document.querySelector<HTMLElement>('[data-stage-index]');
+  const stageLabel = document.querySelector<HTMLElement>('[data-stage-label]');
+  const hintText = document.querySelector<HTMLElement>('[data-hint-text]');
+
+  const setActive = (index: number) => {
+    const pane = panes[index];
+
+    panes.forEach((item, i) => item.classList.toggle('is-active', i === index));
+    dots.forEach((dot, i) => dot.classList.toggle('is-on', i === index));
+
+    const navKey: Record<string, string> = {
+      start: 'start',
+      propositions: 'propositions',
+      reading: 'reading',
+      about: 'about',
+    };
+    const key = navKey[pane?.id ?? ''] ?? '';
+    document.querySelectorAll<HTMLElement>('[data-nav]').forEach((link) => {
+      const on = link.dataset.nav === key;
+      link.classList.toggle('active', on);
+      if (on) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+
+    if (pane) {
+      if (stageIndex) stageIndex.textContent = pane.dataset.pane ?? '';
+      if (stageLabel) stageLabel.textContent = pane.dataset.label ?? '';
+    }
+
+    // 左栏四张图跟着右栏所在区段切换，切换时描线动画重播
+    document.querySelectorAll<HTMLElement>('[data-scene]').forEach((scene) => {
+      scene.classList.toggle('is-on', scene.dataset.scene === (pane?.id ?? ''));
+    });
+
+    const last = index === panes.length - 1;
+    stage?.classList.toggle('is-end', last);
+    if (hintText) hintText.textContent = last ? '已到底' : '向下滚动';
+  };
+
+  setActive(0);
+
+  if (panes.length && 'IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActive(panes.indexOf(entry.target as HTMLElement));
+          }
+        });
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 },
+    );
+
+    panes.forEach((pane) => observer.observe(pane));
+  }
+
+  // 滚动时左侧图缓慢位移，滚动手感更明显
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      if (stage) stage.style.setProperty('--mc-stage-shift', String(Math.min(60, window.scrollY * 0.035)));
+      ticking = false;
+    });
+  };
+
+  if (stage) {
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+  // 鼠标跟随光斑
+  if (stage && window.matchMedia('(pointer: fine)').matches) {
+    let frame = 0;
+    stage.addEventListener('pointermove', (event) => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        const rect = stage.getBoundingClientRect();
+        stage.style.setProperty('--mc-mx', `${((event.clientX - rect.left) / rect.width) * 100}%`);
+        stage.style.setProperty('--mc-my', `${((event.clientY - rect.top) / rect.height) * 100}%`);
+        frame = 0;
+      });
+    });
+  }
+
+  const panel = document.querySelector<HTMLElement>('[data-progress]');
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-proposition-id]'));
+  const count = document.querySelector<HTMLElement>('[data-progress-count]');
+  const bar = document.querySelector<HTMLElement>('[data-progress-bar]');
+  const fill = document.querySelector<HTMLElement>('[data-progress-fill]');
+  const clearButton = panel?.querySelector<HTMLButtonElement>('[data-progress-clear]');
+
+  const render = () => {
+    const progress = readProgress();
+    const total = cards.length;
+    const done = cards.filter((card) => progress[card.dataset.propositionId ?? '']?.done).length;
+
+    cards.forEach((card) => {
+      const isDone = Boolean(progress[card.dataset.propositionId ?? '']?.done);
+      card.classList.toggle('is-done', isDone);
+      const badge = card.querySelector<HTMLElement>('[data-card-done]');
+      if (badge) badge.hidden = !isDone;
+    });
+
+    if (count) count.textContent = String(done);
+    if (fill) fill.style.width = total === 0 ? '0%' : `${(done / total) * 100}%`;
+    if (bar) {
+      bar.setAttribute('aria-valuemax', String(total));
+      bar.setAttribute('aria-valuenow', String(done));
+    }
+  };
+
+  render();
+
+  clearButton?.addEventListener('click', () => {
+    if (!confirm('清空本机进度？只影响你自己的浏览器。')) return;
+    clearProgress();
+    render();
+  });
+</script>

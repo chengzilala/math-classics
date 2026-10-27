@@ -1,0 +1,195 @@
+---
+// 粟米的交互：粟与糲米按 50 : 30（即 5 : 3）同比例换算。
+// 拖动粟的升数，斜线上的点跟着走，横竖虚线把粟和糲米对齐到坐标轴。
+import '../styles/jsxgraph.css';
+---
+
+<div class="mc-interactive" data-mc-sumi>
+  <div class="mc-board" data-board></div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item">粟 50 份 → 糲米 30 份</span>
+    <span class="mc-legend__item mc-legend__item--blue">约分后 5 : 3</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-s-sumi">粟</label>
+    <input id="mc-s-sumi" type="range" min="1" max="25" step="1" value="10" data-s />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    拖动滑块改变粟的升数，看糲米按比例跟着变。
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-sumi]');
+
+  if (root) {
+    const boardEl = root.querySelector<HTMLElement>('[data-board]');
+    const slider = root.querySelector<HTMLInputElement>('[data-s]');
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (boardEl && slider && resetButton && readout) {
+      const start = async () => {
+        // JSXGraph 打包后较大，等画板进入视口再加载，避免拖慢首屏
+        const { default: JXG } = await import('jsxgraph');
+
+        const board = JXG.JSXGraph.initBoard(boardEl, {
+          boundingbox: [-1.5, 17, 27, -2],
+          axis: true,
+          showCopyright: false,
+          showNavigation: false,
+          pan: { enabled: false },
+          zoom: { enabled: false },
+          defaultAxes: {
+            x: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 5,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+            y: {
+              strokeColor: '#8d95a9',
+              strokeWidth: 1,
+              ticks: {
+                ticksDistance: 5,
+                strokeColor: 'rgba(236,230,214,0.22)',
+                label: { strokeColor: '#8d95a9', fontSize: 11 },
+              },
+            },
+          },
+        });
+
+        // 糲米 = 粟 × 30 ÷ 50，从原点出发的一条斜线
+        board.create('line', [[0, 0], [25, 15]], {
+          straightFirst: false,
+          straightLast: false,
+          strokeColor: '#d9b25f',
+          strokeWidth: 2,
+          fixed: true,
+          highlight: false,
+        });
+
+        const marker = board.create('point', [10, 6], {
+          size: 4,
+          fixed: true,
+          withLabel: false,
+          showInfobox: false,
+          strokeColor: '#ece6d6',
+          fillColor: '#d9b25f',
+        });
+        const footX = board.create('point', [10, 0], { visible: false, fixed: true });
+        const footY = board.create('point', [0, 6], { visible: false, fixed: true });
+
+        board.create('segment', [footX, marker], {
+          strokeColor: '#6aa8ff',
+          strokeWidth: 1,
+          dash: 3,
+          fixed: true,
+          highlight: false,
+        });
+        board.create('segment', [footY, marker], {
+          strokeColor: '#6aa8ff',
+          strokeWidth: 1,
+          dash: 3,
+          fixed: true,
+          highlight: false,
+        });
+
+        const markerText = board.create('text', [11, 6.8, '6 升'], {
+          fontSize: 12,
+          strokeColor: '#ece6d6',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+          cssStyle: 'white-space: nowrap;',
+        });
+
+        board.create('text', [25.3, -1.2, '粟（升）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'right',
+          fixed: true,
+          highlight: false,
+        });
+        board.create('text', [1.2, 16.4, '糲米（升）'], {
+          fontSize: 12,
+          strokeColor: '#8d95a9',
+          anchorX: 'left',
+          fixed: true,
+          highlight: false,
+        });
+
+        const sync = () => {
+          const s = Number(slider.value);
+          const rice = (s * 30) / 50;
+          const exact = s === 10;
+
+          marker.setPosition(JXG.COORDS_BY_USER, [s, rice]);
+          footX.setPosition(JXG.COORDS_BY_USER, [s, 0]);
+          footY.setPosition(JXG.COORDS_BY_USER, [0, rice]);
+          markerText.setText(`${rice} 升`);
+          markerText.setPosition(JXG.COORDS_BY_USER, [s + 0.8, rice + 0.8]);
+
+          if (exact) {
+            readout.innerHTML = `粟 10 升 × 30 ÷ 50 = <strong>糲米 6 升</strong>——这就是《九章》粟米第一问的答案。`;
+          } else {
+            readout.innerHTML =
+              `粟 ${s} 升 × 30 ÷ 50 = <strong>糲米 ${rice} 升</strong>。比例不变，粟翻倍，米也翻倍。`;
+          }
+
+          board.update();
+        };
+
+        slider.addEventListener('input', sync);
+        resetButton.addEventListener('click', () => {
+          slider.value = '10';
+          sync();
+        });
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+
+        const fitBoard = () => {
+          const width = Math.round(boardEl.clientWidth);
+          const height = Math.round(boardEl.clientHeight);
+          if (width === 0 || height === 0 || (width === lastWidth && height === lastHeight)) return;
+          lastWidth = width;
+          lastHeight = height;
+          board.resizeContainer(width, height, true);
+        };
+
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(fitBoard).observe(boardEl);
+        } else {
+          window.addEventListener('resize', fitBoard);
+        }
+        fitBoard();
+
+        sync();
+      };
+
+      // 画板进入视口（提前 200px）再加载
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer.disconnect();
+              start();
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        observer.observe(root);
+      } else {
+        start();
+      }
+    }
+  }
+</script>

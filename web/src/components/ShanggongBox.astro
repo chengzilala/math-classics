@@ -1,0 +1,217 @@
+---
+// 商功的交互：方堡壔（底面正方形、四壁竖直的土墩）。
+// 拖动底面边长与高，体积 = 方 × 方 × 高；方 16 尺、高 15 尺时得 3840 立方尺。
+import '../styles/jsxgraph.css';
+---
+
+<div class="mc-interactive" data-mc-shanggong>
+  <div class="mc-board" data-board></div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item">方自乘：底面 = 方 × 方</span>
+    <span class="mc-legend__item mc-legend__item--blue">再乘高 = 体积</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-s-shanggong">方</label>
+    <input id="mc-s-shanggong" type="range" min="8" max="24" step="1" value="16" data-s />
+    <label for="mc-h-shanggong">高</label>
+    <input id="mc-h-shanggong" type="range" min="5" max="25" step="1" value="15" data-h />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    拖动两个滑块改变土墩的大小，看体积怎么算出来。
+  </p>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-shanggong]');
+
+  if (root) {
+    const boardEl = root.querySelector<HTMLElement>('[data-board]');
+    const sideSlider = root.querySelector<HTMLInputElement>('[data-s]');
+    const heightSlider = root.querySelector<HTMLInputElement>('[data-h]');
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (boardEl && sideSlider && heightSlider && resetButton && readout) {
+      const start = async () => {
+        // JSXGraph 打包后较大，等画板进入视口再加载，避免拖慢首屏
+        const { default: JXG } = await import('jsxgraph');
+
+        // 斜投影的偏移量：让立方体看起来有厚度
+        const DX = 2.4;
+        const DY = 1.8;
+
+        const board = JXG.JSXGraph.initBoard(boardEl, {
+          boundingbox: [-5, 30, 32, -6],
+          axis: false,
+          showCopyright: false,
+          showNavigation: false,
+          pan: { enabled: false },
+          zoom: { enabled: false },
+        });
+
+        const a = board.create('point', [0, 0], { visible: false, fixed: true });
+        const b = board.create('point', [16, 0], { visible: false, fixed: true });
+        const c = board.create('point', [16, 15], { visible: false, fixed: true });
+        const d = board.create('point', [0, 15], { visible: false, fixed: true });
+
+        const a2 = board.create('point', [DX, DY], { visible: false, fixed: true });
+        const b2 = board.create('point', [16 + DX, DY], { visible: false, fixed: true });
+        const c2 = board.create('point', [16 + DX, 15 + DY], { visible: false, fixed: true });
+        const d2 = board.create('point', [DX, 15 + DY], { visible: false, fixed: true });
+
+        // 正面
+        board.create('polygon', [a, b, c, d], {
+          fillColor: '#d9b25f',
+          fillOpacity: 0.08,
+          borders: { strokeColor: '#d9b25f', strokeWidth: 2 },
+          vertices: { visible: false },
+          highlight: false,
+        });
+
+        // 顶面
+        board.create('polygon', [d, c, c2, d2], {
+          fillColor: '#d9b25f',
+          fillOpacity: 0.16,
+          borders: { strokeColor: '#d9b25f', strokeWidth: 1.5 },
+          vertices: { visible: false },
+          highlight: false,
+        });
+
+        // 右侧面
+        board.create('polygon', [b, b2, c2, c], {
+          fillColor: '#6aa8ff',
+          fillOpacity: 0.1,
+          borders: { strokeColor: '#6aa8ff', strokeWidth: 1.5 },
+          vertices: { visible: false },
+          highlight: false,
+        });
+
+        // 被挡住的背面棱：虚线
+        board.create('segment', [a, a2], {
+          strokeColor: '#8d95a9',
+          strokeWidth: 1,
+          dash: 3,
+          fixed: true,
+          highlight: false,
+        });
+        board.create('segment', [a2, b2], {
+          strokeColor: '#8d95a9',
+          strokeWidth: 1,
+          dash: 3,
+          fixed: true,
+          highlight: false,
+        });
+        board.create('segment', [a2, d2], {
+          strokeColor: '#8d95a9',
+          strokeWidth: 1,
+          dash: 3,
+          fixed: true,
+          highlight: false,
+        });
+
+        const sideLabel = board.create('text', [8, -2.4, '方 16 尺'], {
+          fontSize: 12,
+          strokeColor: '#d9b25f',
+          anchorX: 'middle',
+          fixed: true,
+          highlight: false,
+        });
+        const heightLabel = board.create('text', [-1.2, 7.5, '高 15 尺'], {
+          fontSize: 12,
+          strokeColor: '#d9b25f',
+          anchorX: 'right',
+          fixed: true,
+          highlight: false,
+        });
+        const volumeLabel = board.create('text', [8, 7.5, '3840 立方尺'], {
+          fontSize: 13,
+          strokeColor: '#ece6d6',
+          anchorX: 'middle',
+          fixed: true,
+          highlight: false,
+        });
+
+        const sync = () => {
+          const s = Number(sideSlider.value);
+          const h = Number(heightSlider.value);
+          const volume = s * s * h;
+          const exact = s === 16 && h === 15;
+
+          b.setPosition(JXG.COORDS_BY_USER, [s, 0]);
+          c.setPosition(JXG.COORDS_BY_USER, [s, h]);
+          d.setPosition(JXG.COORDS_BY_USER, [0, h]);
+          a2.setPosition(JXG.COORDS_BY_USER, [DX, DY]);
+          b2.setPosition(JXG.COORDS_BY_USER, [s + DX, DY]);
+          c2.setPosition(JXG.COORDS_BY_USER, [s + DX, h + DY]);
+          d2.setPosition(JXG.COORDS_BY_USER, [DX, h + DY]);
+
+          sideLabel.setText(`方 ${s} 尺`);
+          sideLabel.setPosition(JXG.COORDS_BY_USER, [s / 2, -2.4]);
+          heightLabel.setText(`高 ${h} 尺`);
+          heightLabel.setPosition(JXG.COORDS_BY_USER, [-1.2, h / 2]);
+          volumeLabel.setText(`积 ${volume} 立方尺`);
+          volumeLabel.setPosition(JXG.COORDS_BY_USER, [s / 2, h / 2]);
+
+          board.update();
+
+          if (exact) {
+            readout.innerHTML = `<strong>16 × 16 × 15 = 3840 立方尺</strong>——正是《九章》商功第八问的答案。`;
+          } else {
+            readout.innerHTML =
+              `底面积 <strong>${s} × ${s} = ${s * s} 平方尺</strong>，再乘高 ${h}，得 <strong>${volume} 立方尺</strong>。` +
+              (volume > 3840 ? '比原题多了。' : '比原题少了。');
+          }
+        };
+
+        sideSlider.addEventListener('input', sync);
+        heightSlider.addEventListener('input', sync);
+        resetButton.addEventListener('click', () => {
+          sideSlider.value = '16';
+          heightSlider.value = '15';
+          sync();
+        });
+
+        let lastWidth = 0;
+        let lastHeight = 0;
+
+        const fitBoard = () => {
+          const width = Math.round(boardEl.clientWidth);
+          const height = Math.round(boardEl.clientHeight);
+          if (width === 0 || height === 0 || (width === lastWidth && height === lastHeight)) return;
+          lastWidth = width;
+          lastHeight = height;
+          board.resizeContainer(width, height, true);
+        };
+
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(fitBoard).observe(boardEl);
+        } else {
+          window.addEventListener('resize', fitBoard);
+        }
+        fitBoard();
+
+        sync();
+      };
+
+      // 画板进入视口（提前 200px）再加载
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer.disconnect();
+              start();
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        observer.observe(root);
+      } else {
+        start();
+      }
+    }
+  }
+</script>
