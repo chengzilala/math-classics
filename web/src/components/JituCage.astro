@@ -1,0 +1,214 @@
+---
+// 鸡兔同笼的交互：35 个头先按「全是鸡」摆好，再拖滑块把鸡换成兔。
+// 每换一只兔，脚数 +2；脚数条上的虚线标着题目给的 94 只脚。
+---
+
+<div class="mc-interactive mc-jitu" data-mc-jitu>
+  <div class="mc-jitu__cage" data-cage aria-hidden="true"></div>
+
+  <div class="mc-jitu__feet">
+    <div class="mc-jitu__feet-head">
+      <span>35 个头 · 共 <b data-feet>70</b> 只脚</span>
+      <span>虚线 = 题给 94 只</span>
+    </div>
+    <div class="mc-jitu__track">
+      <div class="mc-jitu__bar mc-jitu__bar--chicken" data-bar-chicken></div>
+      <div class="mc-jitu__bar mc-jitu__bar--rabbit" data-bar-rabbit></div>
+      <span class="mc-jitu__target" data-target></span>
+    </div>
+  </div>
+
+  <div class="mc-legend">
+    <span class="mc-legend__item mc-legend__item--blue">鸡 · 2 只脚</span>
+    <span class="mc-legend__item">兔 · 4 只脚</span>
+  </div>
+
+  <div class="mc-controls">
+    <label for="mc-r-jitu">兔子</label>
+    <input id="mc-r-jitu" type="range" min="0" max="35" step="1" value="0" data-r />
+    <button type="button" class="mc-btn" data-reset>复位</button>
+  </div>
+
+  <p class="mc-readout" data-readout aria-live="polite">
+    现在 35 只全是鸡，共 70 只脚。拖动滑块把鸡换成兔。
+  </p>
+</div>
+
+<style>
+  .mc-jitu__cage {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+
+  .mc-jitu__head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    border: 1px solid rgba(106, 168, 255, 0.42);
+    border-radius: 3px;
+    background: rgba(106, 168, 255, 0.1);
+    color: #9fc6ff;
+    font-family: var(--mc-serif);
+    font-size: 14px;
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+
+  .mc-jitu__head.is-rabbit {
+    border-color: rgba(217, 178, 95, 0.55);
+    background: rgba(217, 178, 95, 0.14);
+    color: var(--mc-accent);
+  }
+
+  .mc-jitu__feet-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 1.2rem;
+    font-size: 12.5px;
+    color: var(--mc-muted);
+  }
+
+  .mc-jitu__feet-head b {
+    color: var(--mc-accent);
+    font-weight: 600;
+  }
+
+  .mc-jitu__track {
+    position: relative;
+    height: 18px;
+    margin-top: 8px;
+    border: 1px solid var(--mc-line-strong);
+    border-radius: 2px;
+    background: rgba(236, 230, 214, 0.04);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .mc-jitu__bar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transition: width 0.2s ease, left 0.2s ease;
+  }
+
+  .mc-jitu__bar--chicken {
+    left: 0;
+    background: rgba(106, 168, 255, 0.55);
+  }
+
+  .mc-jitu__bar--rabbit {
+    background: rgba(217, 178, 95, 0.72);
+  }
+
+  .mc-jitu__target {
+    position: absolute;
+    top: -6px;
+    bottom: -6px;
+    left: 67.142857%;
+    border-left: 1px dashed rgba(236, 230, 214, 0.5);
+    transition: border-color 0.25s ease;
+  }
+
+  .mc-jitu__target::after {
+    content: "94";
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    transform: translateX(-50%);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--mc-muted);
+    transition: color 0.25s ease;
+  }
+
+  .mc-jitu.is-solved .mc-jitu__track {
+    border-color: var(--mc-accent);
+    box-shadow: 0 0 18px rgba(217, 178, 95, 0.18);
+  }
+
+  .mc-jitu.is-solved .mc-jitu__target {
+    border-color: var(--mc-accent);
+  }
+
+  .mc-jitu.is-solved .mc-jitu__target::after {
+    color: var(--mc-accent);
+  }
+
+  .mc-jitu .mc-legend {
+    margin-top: 1.4rem;
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-mc-jitu]');
+
+  if (root) {
+    const HEADS = 35;
+    const FEET_TARGET = 94;
+    const MAX_FEET = HEADS * 4;
+
+    const cage = root.querySelector<HTMLElement>('[data-cage]');
+    const slider = root.querySelector<HTMLInputElement>('[data-r]');
+    const reset = root.querySelector<HTMLButtonElement>('[data-reset]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+    const feetLabel = root.querySelector<HTMLElement>('[data-feet]');
+    const chickenBar = root.querySelector<HTMLElement>('[data-bar-chicken]');
+    const rabbitBar = root.querySelector<HTMLElement>('[data-bar-rabbit]');
+
+    if (cage && slider && reset && readout && feetLabel && chickenBar && rabbitBar) {
+      // 一次建好 35 个头，之后只改颜色和文字，拖动时不抖
+      const heads: HTMLElement[] = [];
+      const frag = document.createDocumentFragment();
+
+      for (let i = 0; i < HEADS; i += 1) {
+        const head = document.createElement('span');
+        head.className = 'mc-jitu__head';
+        head.textContent = '鸡';
+        heads.push(head);
+        frag.append(head);
+      }
+      cage.append(frag);
+
+      const sync = () => {
+        const rabbits = Number(slider.value);
+        const chickens = HEADS - rabbits;
+        const feet = chickens * 2 + rabbits * 4;
+
+        heads.forEach((head, i) => {
+          const isRabbit = i < rabbits;
+          head.classList.toggle('is-rabbit', isRabbit);
+          head.textContent = isRabbit ? '兔' : '鸡';
+        });
+
+        const chickenFeet = chickens * 2;
+        chickenBar.style.width = `${(chickenFeet / MAX_FEET) * 100}%`;
+        rabbitBar.style.left = `${(chickenFeet / MAX_FEET) * 100}%`;
+        rabbitBar.style.width = `${(rabbits * 4 / MAX_FEET) * 100}%`;
+
+        feetLabel.textContent = String(feet);
+
+        const solved = feet === FEET_TARGET;
+        root.classList.toggle('is-solved', solved);
+
+        if (solved) {
+          readout.innerHTML = `鸡 <strong>${chickens}</strong> 只、兔 <strong>${rabbits}</strong> 只，共 <strong>${feet}</strong> 只脚——正好对上题目。`;
+        } else {
+          const gap = Math.abs(FEET_TARGET - feet);
+          readout.innerHTML =
+            `鸡 ${chickens} 只、兔 ${rabbits} 只，共 ${feet} 只脚，比 94 只${feet < FEET_TARGET ? '少' : '多'} <strong>${gap}</strong> 只。` +
+            (feet < FEET_TARGET ? '再添一只兔（换掉一只鸡），脚就多 2 只。' : '减一只兔（换回一只鸡），脚就少 2 只。');
+        }
+      };
+
+      slider.addEventListener('input', sync);
+      reset.addEventListener('click', () => {
+        slider.value = '0';
+        sync();
+      });
+
+      sync();
+    }
+  }
+</script>

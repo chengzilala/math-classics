@@ -1,0 +1,200 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import Exercises from '../../../components/Exercises.astro';
+import PythagorasPanel from '../../../components/topics/PythagorasPanel.astro';
+import FractionPanel from '../../../components/topics/FractionPanel.astro';
+import PercentPanel from '../../../components/topics/PercentPanel.astro';
+import EquivalentFractionsPanel from '../../../components/topics/EquivalentFractionsPanel.astro';
+import RectAreaPanel from '../../../components/topics/RectAreaPanel.astro';
+import TriangleAreaPanel from '../../../components/topics/TriangleAreaPanel.astro';
+import '../../../styles/lab.css';
+import '../../../styles/topics.css';
+import { site } from '../../../site';
+import { allTopics } from '../../../data/curriculum';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('topics');
+  const written = new Map(entries.map((entry) => [entry.data.id, entry]));
+
+  return allTopics.map((topic) => ({
+    params: { section: topic.section.slug, slug: topic.slug },
+    props: { topic, entry: written.get(topic.slug) ?? null },
+  }));
+}
+
+const { topic, entry } = Astro.props;
+const { section, chapter } = topic;
+
+const written = new Set((await getCollection('topics')).map((item) => item.data.id));
+const rendered = entry ? await render(entry) : null;
+const Body = rendered?.Content;
+const t = entry?.data ?? null;
+
+const panelMap: Record<string, { Component: any; props: Record<string, any> }> = {
+  'pythagoras-squares': { Component: PythagorasPanel, props: {} },
+  'fractions-bar': { Component: FractionPanel, props: { numerator: 3, denominator: 8 } },
+  'fractions-simplify': { Component: FractionPanel, props: { numerator: 8, denominator: 12 } },
+  'fractions-decimal': { Component: FractionPanel, props: { numerator: 7, denominator: 8, tone: 'blue' } },
+  'equivalent-fractions': { Component: EquivalentFractionsPanel, props: {} },
+  'rect-area': { Component: RectAreaPanel, props: { width: 15, height: 16 } },
+  'triangle-area': { Component: TriangleAreaPanel, props: { base: 6, height: 4 } },
+  'percent-bar': { Component: PercentPanel, props: {} },
+};
+
+const panel = t ? panelMap[t.interaction] : null;
+const Panel = panel?.Component ?? null;
+const panelProps = panel?.props ?? {};
+if (t && !panel) {
+  throw new Error(`未知的主题交互：${t.interaction}`);
+}
+
+const flatIndex = allTopics.findIndex((item) => item.slug === topic.slug);
+const prev = flatIndex > 0 ? allTopics[flatIndex - 1] : null;
+const next = flatIndex < allTopics.length - 1 ? allTopics[flatIndex + 1] : null;
+---
+
+<Base
+  title={t ? `${t.title}是什么意思？一页讲清` : `${topic.title}（编写中）`}
+  description={t?.summary ?? `${section.title} · ${chapter.title}：${topic.title}，页面正在编写。`}
+  full
+>
+  <article class="mc-topic">
+    <nav class="mc-topic__crumbs" aria-label="面包屑">
+      <a href="/fun/">趣味数学</a>
+      <span aria-hidden="true">/</span>
+      <a href={`/topics/${section.slug}/`}>{section.title}</a>
+      <span aria-hidden="true">/</span>
+      <span>{chapter.title}</span>
+    </nav>
+
+    <header class="mc-topic__head">
+      <p class="mc-kicker">
+        {section.title} · {chapter.title}
+      </p>
+      <h1>{t?.title ?? topic.title}</h1>
+      <p class="mc-lead">
+        {t?.summary ?? `这一页属于「${chapter.title}」，是整套体系里的一站。`}
+      </p>
+    </header>
+
+    {
+      t && (
+        <section class="mc-topic__block" aria-labelledby="examples">
+          <h2 id="examples">例子</h2>
+          <div class="mc-topic__examples">
+            {t.examples.map((example) => (
+              <div class="mc-topic__example">
+                <p class="mc-topic__question">
+                  <span class="mc-topic__tag">例</span>
+                  {example.question}
+                </p>
+                <p class="mc-topic__answer">{example.answer}</p>
+                {example.note && <p class="mc-topic__example-note">{example.note}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    {
+      t && Panel && (
+        <section class="mc-topic__block" aria-labelledby="demo">
+          <h2 id="demo">自己试试看</h2>
+          <p class="mc-topic__note">
+            {t.interaction_note ?? '拖动图中的控件，先用手感受一下关系。'}
+          </p>
+          <Panel {...panelProps} />
+        </section>
+      )
+    }
+
+    {Body && (
+      <div class="mc-topic__prose">
+        <Body />
+      </div>
+    )}
+
+    {
+      t && (
+        <section class="mc-topic__block" aria-labelledby="practice">
+          <h2 id="practice">做两题</h2>
+          <Exercises exercises={t.exercises} propositionId={`topic-${t.id}`} />
+        </section>
+      )
+    }
+
+    {
+      !t && (
+        <section class="mc-topic__block">
+          <div class="mc-topic__stub">
+            <p class="mc-topic__stub-title">这一页还在编写</p>
+            <p>
+              站点体系已经按「大类 → 章节 → 主题」建全，所以这一页现在就能点开、也接得上前后章节；
+              讲解、交互与练习会按批次补上，补完前不会给你一个半成品。
+            </p>
+            <p>
+              同一章里已完成的主题：
+              {
+                chapter.topics.filter((item) => written.has(item.slug)).length > 0 ? (
+                  <span>
+                    {chapter.topics
+                      .filter((item) => written.has(item.slug))
+                      .map((item, i) => (
+                        <Fragment>
+                          {i > 0 && '、'}
+                          <a href={`/topics/${section.slug}/${item.slug}/`}>{item.title}</a>
+                        </Fragment>
+                      ))}
+                  </span>
+                ) : (
+                  <span>暂无，先从别的章节看起。</span>
+                )
+              }
+            </p>
+            <p>
+              也可以回 <a href={`/topics/${section.slug}/`}>{section.title}</a>
+              或回 <a href="/fun/">趣味数学总览</a>。
+            </p>
+          </div>
+        </section>
+      )
+    }
+
+    <section class="mc-topic__block" aria-labelledby="chapter">
+      <h2 id="chapter">{chapter.title} · 本章目录</h2>
+      <ul class="mc-chapter__list mc-chapter__list--compact">
+        {
+          chapter.topics.map((item) => (
+            <li>
+              <a
+                href={`/topics/${section.slug}/${item.slug}/`}
+                class:list={[
+                  'mc-chapter__link',
+                  { 'is-done': written.has(item.slug), 'is-current': item.slug === topic.slug },
+                ]}
+              >
+                <span class="mc-chapter__dot" aria-hidden="true" />
+                {item.title}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <nav class="mc-topic__pager" aria-label="上一篇 / 下一篇">
+      {prev ? <a href={prev.href}>← {prev.title}</a> : <span />}
+      {next ? <a href={next.href}>{next.title} →</a> : <span />}
+    </nav>
+
+    <footer class="mc-topic__foot">
+      <p>
+        本页为本站自编内容，参考通用数学定义与教材共识，不翻译、不搬运任何网站的文字、图片或代码。
+        发现错漏？<a href={site.errataHref}>{site.errataLabel}</a>。
+      </p>
+      <p class="mc-topic__updated">最后更新：{t?.updated ?? '体系建立于 2026-10-27，内容待补'}</p>
+    </footer>
+  </article>
+</Base>

@@ -1,0 +1,166 @@
+---
+// 基础原语 03：拖拽点。把点拖到目标附近，用来做「拖到答案」式练习。
+interface Props {
+  targetX?: number;
+  targetY?: number;
+  tolerance?: number;
+  snap?: number;
+}
+
+const { targetX = 3, targetY = 4, tolerance = 0.6, snap = 0.5 } = Astro.props;
+---
+
+<div
+  class="mc-lab-board"
+  data-drag-point
+  data-target-x={targetX}
+  data-target-y={targetY}
+  data-tolerance={tolerance}
+  data-snap={snap}
+>
+  <svg viewBox="0 0 300 300" tabindex="0" role="application" aria-label="拖动点，把它移到虚线圆圈里" data-svg>
+    <g data-grid></g>
+    <circle class="mc-lab-target" r="9" cx="0" cy="0" data-target></circle>
+    <circle class="mc-lab-dot" r="8" cx="0" cy="0" data-dot></circle>
+  </svg>
+  <p class="mc-lab-readout" data-readout aria-live="polite">把点拖进虚线圆圈</p>
+</div>
+
+<script>
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const make = (tag: string, attrs: Record<string, string | number> = {}) => {
+    const node = document.createElementNS(NS, tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+    return node;
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-drag-point]').forEach((root) => {
+    const svg = root.querySelector<SVGSVGElement>('[data-svg]');
+    const gridLayer = root.querySelector<SVGGElement>('[data-grid]');
+    const targetEl = root.querySelector<SVGCircleElement>('[data-target]');
+    const dot = root.querySelector<SVGCircleElement>('[data-dot]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (!svg || !gridLayer || !targetEl || !dot || !readout) return;
+
+    const SIZE = 300;
+    const PAD = 16;
+    const MAX = 10;
+    const plot = SIZE - PAD * 2;
+
+    const snap = Number(root.dataset.snap ?? 0.5) || 0.5;
+    const targetX = Number(root.dataset.targetX ?? 3);
+    const targetY = Number(root.dataset.targetY ?? 4);
+    const tolerance = Number(root.dataset.tolerance ?? 0.6);
+
+    const clamp = (value: number, min: number, max: number) =>
+      Math.min(max, Math.max(min, value));
+
+    const screenX = (x: number) => PAD + (x / MAX) * plot;
+    const screenY = (y: number) => SIZE - PAD - (y / MAX) * plot;
+    const fmt = (value: number) => String(Math.round(value * 100) / 100);
+
+    const state = { x: 1, y: 1, dragging: false };
+
+    for (let i = 1; i < MAX; i += 1) {
+      gridLayer.appendChild(
+        make('line', {
+          x1: screenX(i),
+          y1: PAD,
+          x2: screenX(i),
+          y2: SIZE - PAD,
+          class: 'mc-lab-grid-line',
+        }),
+      );
+      gridLayer.appendChild(
+        make('line', {
+          x1: PAD,
+          y1: screenY(i),
+          x2: SIZE - PAD,
+          y2: screenY(i),
+          class: 'mc-lab-grid-line',
+        }),
+      );
+    }
+
+    targetEl.setAttribute('cx', String(screenX(targetX)));
+    targetEl.setAttribute('cy', String(screenY(targetY)));
+
+    const render = (emit = false) => {
+      dot.setAttribute('cx', String(screenX(state.x)));
+      dot.setAttribute('cy', String(screenY(state.y)));
+
+      const distance = Math.hypot(state.x - targetX, state.y - targetY);
+      const hit = distance <= tolerance;
+
+      readout.classList.toggle('is-ok', hit);
+      readout.innerHTML = hit
+        ? `命中目标（<strong>${targetX}</strong>, <strong>${targetY}</strong>）`
+        : `当前（<strong>${fmt(state.x)}</strong>, <strong>${fmt(state.y)}</strong>）· 距目标 <strong>${distance.toFixed(2)}</strong>`;
+
+      if (emit) {
+        root.dispatchEvent(
+          new CustomEvent('mc:drag', {
+            detail: { x: state.x, y: state.y, distance, hit },
+            bubbles: true,
+          }),
+        );
+      }
+    };
+
+    const moveTo = (clientX: number, clientY: number) => {
+      const rect = svg.getBoundingClientRect();
+      const px = ((clientX - rect.left) / rect.width) * SIZE;
+      const py = ((clientY - rect.top) / rect.height) * SIZE;
+
+      const rawX = ((px - PAD) / plot) * MAX;
+      const rawY = ((SIZE - PAD - py) / plot) * MAX;
+
+      state.x = clamp(Math.round(rawX / snap) * snap, 0, MAX);
+      state.y = clamp(Math.round(rawY / snap) * snap, 0, MAX);
+      render(true);
+    };
+
+    svg.addEventListener('pointerdown', (event) => {
+      state.dragging = true;
+      dot.classList.add('is-dragging');
+      svg.setPointerCapture(event.pointerId);
+      svg.focus();
+      moveTo(event.clientX, event.clientY);
+      event.preventDefault();
+    });
+
+    svg.addEventListener('pointermove', (event) => {
+      if (state.dragging) moveTo(event.clientX, event.clientY);
+    });
+
+    const stop = () => {
+      state.dragging = false;
+      dot.classList.remove('is-dragging');
+    };
+
+    svg.addEventListener('pointerup', stop);
+    svg.addEventListener('pointercancel', stop);
+
+    svg.addEventListener('keydown', (event) => {
+      const step = event.shiftKey ? snap * 4 : snap;
+      let handled = true;
+
+      if (event.key === 'ArrowLeft') state.x -= step;
+      else if (event.key === 'ArrowRight') state.x += step;
+      else if (event.key === 'ArrowUp') state.y += step;
+      else if (event.key === 'ArrowDown') state.y -= step;
+      else handled = false;
+
+      if (!handled) return;
+
+      state.x = clamp(state.x, 0, MAX);
+      state.y = clamp(state.y, 0, MAX);
+      render(true);
+      event.preventDefault();
+    });
+
+    render();
+  });
+</script>

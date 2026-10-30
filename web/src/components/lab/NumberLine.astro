@@ -1,0 +1,186 @@
+---
+// 基础原语 04：数轴。拖动游标，读数吸附到刻度。
+interface Props {
+  label?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  value?: number;
+  unit?: string;
+}
+
+const { label = '数轴', min = -5, max = 15, step = 1, value = 0, unit = '' } = Astro.props;
+
+// 服务端先算好初始位置，避免 JS 加载前游标停在最左边
+const START_X = 26 + ((value - min) / (max - min)) * (360 - 26 - 26);
+---
+
+<div class="mc-lab-numline" data-number-line data-min={min} data-max={max} data-step={step} data-value={value} data-unit={unit}>
+  <div class="mc-lab-field__head">
+    <span class="mc-lab-field__label">{label}</span>
+    <output class="mc-lab-field__value" data-value>{value}{unit}</output>
+  </div>
+  <svg viewBox="0 0 360 100" tabindex="0" role="slider" aria-label={label} aria-valuemin={min} aria-valuemax={max} aria-valuenow={value} data-svg>
+    <g data-axis></g>
+    <g>
+      <line class="mc-lab-numline__mark" x1={START_X} y1="40" x2={START_X} y2="78"></line>
+      <circle class="mc-lab-numline__knob" r="7" cx={START_X} cy="62"></circle>
+      <text class="mc-lab-numline__value" text-anchor="middle" x={START_X} y="32">{value}{unit}</text>
+    </g>
+  </svg>
+</div>
+
+<script>
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const make = (tag: string, attrs: Record<string, string | number> = {}) => {
+    const node = document.createElementNS(NS, tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+    return node;
+  };
+
+  const niceLabelStep = (span: number) => {
+    const raw = span / 6;
+    const power = 10 ** Math.floor(Math.log10(raw));
+    const candidate = [1, 2, 5, 10].map((multiplier) => multiplier * power).find((value) => value >= raw);
+    return candidate ?? power * 10;
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-number-line]').forEach((root) => {
+    const svg = root.querySelector<SVGSVGElement>('[data-svg]');
+    const axisLayer = root.querySelector<SVGGElement>('[data-axis]');
+    const markLine = root.querySelector<SVGLineElement>('.mc-lab-numline__mark');
+    const knob = root.querySelector<SVGCircleElement>('.mc-lab-numline__knob');
+    const valueText = root.querySelector<SVGTextElement>('.mc-lab-numline__value');
+    const output = root.querySelector<HTMLElement>('[data-value]');
+
+    if (!svg || !axisLayer || !markLine || !knob || !valueText || !output) return;
+
+    const W = 360;
+    const PAD_L = 26;
+    const PAD_R = 26;
+    const BASE_Y = 62;
+    const plotW = W - PAD_L - PAD_R;
+
+    const min = Number(root.dataset.min ?? -5);
+    const max = Number(root.dataset.max ?? 15);
+    const step = Number(root.dataset.step ?? 1) || 1;
+    const unit = root.dataset.unit ?? '';
+    const span = max - min;
+
+    const labelStep = niceLabelStep(span);
+    const tickStep = Math.max(step, labelStep / 5);
+
+    const clamp = (value: number, low: number, high: number) =>
+      Math.min(high, Math.max(low, value));
+
+    const screenX = (value: number) => PAD_L + ((value - min) / span) * plotW;
+    const valueAt = (clientX: number) => {
+      const rect = svg.getBoundingClientRect();
+      const px = ((clientX - rect.left) / rect.width) * W;
+      const raw = min + ((px - PAD_L) / plotW) * span;
+      return clamp(Math.round(raw / step) * step, min, max);
+    };
+
+    axisLayer.appendChild(
+      make('line', {
+        x1: PAD_L,
+        y1: BASE_Y,
+        x2: W - PAD_R,
+        y2: BASE_Y,
+        class: 'mc-lab-numline__base',
+      }),
+    );
+
+    for (let value = min; value <= max + 1e-9; value += tickStep) {
+      const x = screenX(value);
+      const major = Math.abs(value / labelStep - Math.round(value / labelStep)) < 1e-6;
+      axisLayer.appendChild(
+        make('line', {
+          x1: x,
+          y1: BASE_Y - (major ? 9 : 5),
+          x2: x,
+          y2: BASE_Y + (major ? 9 : 5),
+          class: major ? 'mc-lab-numline__tick mc-lab-numline__tick--major' : 'mc-lab-numline__tick',
+        }),
+      );
+
+      if (major) {
+        axisLayer.appendChild(
+          make('text', {
+            x,
+            y: BASE_Y + 26,
+            'text-anchor': 'middle',
+            class: 'mc-lab-numline__label',
+          }),
+        ).textContent = String(Math.round(value * 100) / 100);
+      }
+    }
+
+    let current = clamp(Number(root.dataset.value ?? 0), min, max);
+
+    const render = (emit = false) => {
+      const x = screenX(current);
+      markLine.setAttribute('x1', String(x));
+      markLine.setAttribute('x2', String(x));
+      knob.setAttribute('cx', String(x));
+      valueText.setAttribute('x', String(x));
+      valueText.textContent = `${current}${unit}`;
+      output.textContent = `${current}${unit}`;
+
+      svg.setAttribute('aria-valuenow', String(current));
+      svg.setAttribute('aria-valuetext', `${current}${unit}`);
+
+      if (emit) {
+        root.dispatchEvent(
+          new CustomEvent('mc:line', { detail: { value: current }, bubbles: true }),
+        );
+      }
+    };
+
+    const setValue = (next: number, emit = false) => {
+      current = clamp(Math.round(next / step) * step, min, max);
+      render(emit);
+    };
+
+    let dragging = false;
+
+    svg.addEventListener('pointerdown', (event) => {
+      dragging = true;
+      svg.setPointerCapture(event.pointerId);
+      svg.focus();
+      setValue(valueAt(event.clientX), true);
+      event.preventDefault();
+    });
+
+    svg.addEventListener('pointermove', (event) => {
+      if (dragging) setValue(valueAt(event.clientX), true);
+    });
+
+    const stop = () => {
+      dragging = false;
+    };
+
+    svg.addEventListener('pointerup', stop);
+    svg.addEventListener('pointercancel', stop);
+
+    svg.addEventListener('keydown', (event) => {
+      let next = current;
+
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') next -= step;
+      else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') next += step;
+      else if (event.key === 'Home') next = min;
+      else if (event.key === 'End') next = max;
+      else return;
+
+      setValue(next, true);
+      event.preventDefault();
+    });
+
+    (root as HTMLElement & { mcSetValue?: (value: number) => void }).mcSetValue = (value: number) =>
+      setValue(value, false);
+
+    render();
+    root.dispatchEvent(new CustomEvent('mc:ready', { bubbles: true }));
+  });
+</script>

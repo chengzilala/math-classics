@@ -1,0 +1,42 @@
+---
+// 组合页：勾股定理。只用 CoordPlane 原语，再加一层「平方和」的读数。
+import CoordPlane from '../lab/CoordPlane.astro';
+
+interface Props {
+  max?: number;
+  startX?: number;
+  startY?: number;
+}
+
+const { max = 12, startX = 3, startY = 4 } = Astro.props;
+---
+
+<div class="mc-topic-panel" data-pythagoras data-start-x={startX} data-start-y={startY}>
+  <CoordPlane mode="triangle" snap={1} maxX={max} maxY={max} startX={startX} startY={startY} />
+  <p class="mc-lab-readout" data-out aria-live="polite">读取中…</p>
+</div>
+
+<script>
+  const fmt = (value: number) => String(Math.round(value * 100) / 100);
+
+  document.querySelectorAll<HTMLElement>('[data-pythagoras]').forEach((panel) => {
+    const out = panel.querySelector<HTMLElement>('[data-out]');
+    if (!out) return;
+
+    const show = (a: number, b: number) => {
+      const a2 = a * a;
+      const b2 = b * b;
+      const c2 = a2 + b2;
+      out.innerHTML = `<strong>${fmt(a)}² + ${fmt(b)}² = ${fmt(a2)} + ${fmt(b2)} = ${fmt(c2)}</strong>；斜边的平方也是 <strong>${fmt(c2)}</strong>，两边永远相等。`;
+    };
+
+    panel.addEventListener('mc:point', (event) => {
+      const detail = (event as CustomEvent<{ x: number; y: number }>).detail;
+      show(detail.x, detail.y);
+    });
+
+    const start = () => show(Number(panel.dataset.startX ?? 3), Number(panel.dataset.startY ?? 4));
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+  });
+</script>

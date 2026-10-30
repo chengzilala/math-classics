@@ -324,4 +324,423 @@
   - 960–1100px 宽屏下三列卡片偏窄，章节行会换行，属预期；悬停预览可看全文。
   - 未 `git commit`、未部署。
 
+## 2026-10-27 会话条目：9 题版本上线 math.chesterlee.cn
+
+- **目标**：把本地 9 题版本推到线上，完成阶段 3 的「域名与部署」，再做上线验证。
+- **已做**：
+  - 核实线上现状：`math.chesterlee.cn` 已解析到 `43.136.92.125`，Caddy 站点指向 `/srv/chesterlee/math`，此前跑的是 4 题版本。
+  - `rsync -az --delete` 推送 `web/dist/` 到服务器，未改 Caddy、未重启服务。
+  - 部署台账回填：§二 域名总表加 `math` 行、§2.1 加项目部署位置、§2.2 改「已上线」、§六 追加操作记录。
+  - README / Running / RPD 阶段 3 同步为「已上线，9 题版本」。
+- **关键结论/决定**：
+  - 部署台账原写「未解析」是过期状态，实测域名与站点早已存在，只是内容停在 4 题。
+  - 本次只换静态产物，Caddy 无需 reload。
+- **产出物（文件/链接）**：
+  - 线上：<https://math.chesterlee.cn>
+  - `部署上线备案/README.md`、`README.md`、`usage/Running.md`、`plan/RPD_需求文档.md`
+- **验证**：
+  - 首页 HTTP 200，`data-proposition-id` 共 9 个；5 个新命题页均 200；sitemap 含 9 条命题。
+  - `health.sh math.chesterlee.cn` 全绿：HTTP 200 / 备案号 ✅ / 版权 ✅ / 证书剩 89 天。
+- **待办**：
+  - 找 20 个真人试读并记录反馈；外部审校 1 轮；接无 Cookie 统计。
+- **风险/注意事项**：
+  - 线上内容已变，但内容正确性仍未经外部审校；发现问题按勘误入口记录后重跑构建 + rsync。
+  - 未 `git commit`。
+
+## 2026-10-28 会话条目：左栏改成连续循环的勾股作图
+
+- **目标**：参考 jihe.1mi.ai 首屏「圆规 + 直尺一步一步作图」的动作，把首页左栏从「按分区换四张图、每张只播一次」改成**一块连续、有节奏、可拖动**的作图动画。
+- **已做**：
+  - 新增 `web/src/components/StageLoop.astro`：SVG 勾三股四弦五（股四 = 竖 288、勾三 = 横 216、弦五 = 360），按六拍循环——① 画股 → ② 画勾 → ③ 连弦 → ④ 以弦为直径作圆（圆心即弦中点，圆过直角顶点，Thales）→ ⑤ 直角标记与「勾三 / 股四 / 弦五」标注 → ⑥「九 + 十六 = 二十五」。
+  - 时间轴 `requestAnimationFrame` 驱动：每拍先描线（ease-out）、再停顿，整轮 16.2s，结尾 0.94→1 淡出后重新落笔；线长用 `getTotalLength()` 量一次，圆用周长，保证描线速度一致。
+  - 节奏提示：图下「01 / 06 + 细进度线 + 当前拍标题」，再一行六格拍点，当前拍亮起。
+  - 交互：按住图面左右拖动可直接停在任意一拍（`setPointerCapture` + `touch-action: pan-y`，触屏竖滑不受影响），松手后从该处继续自动走。
+  - 只在舞台 `is-anim`（离开首屏）时跑；回到首屏或切后台自动停并归零；`prefers-reduced-motion` 下只画完整图形、不自动播。
+  - 删除 `index.astro` 原 4 个 `figure[data-scene]` 与配套 CSS（`.mc-stage__scene` / `.mc-draw*` / `.mc-scene__dots`），去掉脚本里的 `[data-scene]` 切换；保留 `.mc-stage__scenes` 容器负责定位与显隐。
+  - `plan/RPD_需求文档.md` §5 用「左栏连续作图」替换旧「左栏随滚动换图」；`web/package.json` 0.8.1 → 0.8.2。
+- **关键结论/决定**：
+  - 滚动吸附是 `scroll-snap: mandatory`，按滚动像素驱动会让作图一顿一顿，所以改「自动循环 + 拖动擦洗」，既连续又不破坏吸附。
+  - 用本项目的勾股（3-4-5）当主角，而非照搬参考站的等边三角形：动作形式借鉴，图形与文案自绘，符合版权红线。
+  - 动画只在左栏舞台内出现，首屏仍保留「算经」主体，和原版式约定一致。
+- **产出物（文件/链接）**：
+  - `web/src/components/StageLoop.astro`（新增）
+  - `web/src/pages/index.astro`、`plan/RPD_需求文档.md`、`web/package.json`
+- **验证**：
+  - `npm run build` 通过：台账 10 条、数值审核闸 32 条断言全过，11 页输出。
+  - 产物 `dist/index.html` 含 `data-loop` / `data-part` 标记与拖动脚本；本机 `astro dev`（4321）已用 Chrome 打开供目视复核。
+- **待办**：
+  - 目视复核：六拍节奏是否顺、标注是否压线、拖动擦洗手感；真机触屏再试一次。
+  - 外部审校 1 轮；线上未部署本次改动。
+- **风险/注意事项**：
+  - 已滚到中段刷新页面时，IntersectionObserver 会重新判定分区，循环从头开始属预期。
+  - 未 `git commit`、未部署。
+
+## 2026-10-28 会话条目：接入统一账户中心（可选登录，本机闭环）
+
+- **目标**：把「统一账户中心」真正接进 math——顶栏加一个可选登录入口，跑通「跳登录 → 账户中心登录 → 带票回跳 → 页面拿到 uid」，同时不改变「不登录也能做题」。
+- **已做**：
+  - `public/ps-auth.js`：从 `account-center/sdk/ps-auth.js` 复制（SDK 本轮新增 `loginUrl`，解决本地「页面 4321 / 登录页 18830 / 接口 8942」三端口不同域时登录页拼错的问题）。
+  - `src/site.ts` 新增 `account` 配置：`apiBase` / `loginUrl` / `productId: 'math-classics'`；`Base.astro` 用 `import.meta.env.DEV` 切本机与线上两套地址。
+  - `Base.astro` 顶栏加 `.mc-topbar__end` + `button[data-account]`，inline 脚本初始化 SDK：已登录显示「已登录」（点击确认后退出），未登录显示「登录」（跳账户中心）；账户服务不可用则隐藏入口，做题不受影响。
+  - `global.css` 补 `.mc-topbar__end` / `.mc-account` 样式（沿用 nav 下划线动效，移动端纳入 44px 可点高度）。
+  - 口径统一改为「可选登录、不自建账号」：`site.ts` 描述、首页数字块与关于项、页脚文案、`README.md`、`plan/RPD_需求文档.md`。
+  - 账户中心侧登记作品：`node tools/register-product.js math-classics 算经 http://localhost:4321`，并重启 dev-server 生效。
+- **关键结论/决定**：
+  - 登录一律走账户中心，本站不建账号、不存密码；未登录时按钮隐藏/展示失败都不阻断做题（SDK 请求失败只 `hidden`）。
+  - 线上配置写死 `https://account.chesterlee.cn`，本机靠 `import.meta.env.DEV` 切到 `localhost:8942 / 18830`，同一份代码不改。
+  - 作品地址必须先在 `ac_products` 登记，票据才允许回到该 origin（`localhost` 与 `127.0.0.1` 算不同域）。
+- **产出物（文件/链接）**：
+  - `web/public/ps-auth.js`、`web/src/site.ts`、`web/src/layouts/Base.astro`、`web/src/pages/index.astro`、`web/src/styles/global.css`
+  - `README.md`、`plan/RPD_需求文档.md`
+- **验证**：
+  - `npm run build` 通过：台账 10 条、数值断言全过，12 页输出；`dist/ps-auth.js` 存在（6485B），`dist/index.html` 含 SDK 引用与登录按钮标记。
+  - API 级闭环实测：`accountCode.login` 取 Token → `auth.ticket.issue` 回 `http://localhost:4321/?ps_ticket=<32位>` → `auth.ticket.redeem` 换到**同一 uid** → `me` 正常；同一票据复用返回 `CODE_EXPIRED`；未登记域名拒签。
+- **待办**：
+  - 用户在 Chrome 里亲手走一遍真实登录（点登录 → 账户中心登录 → 回本站 → 按钮变「已登录」）。
+  - 上线前：在线上数据里登记 `https://math.chesterlee.cn`，并部署账户服务后复验。
+  - 线上 `ALLOWED_ORIGINS` 必须写具体域名，不能用 `*`。
+- **风险/注意事项**：
+  - 本地三个端口互为不同域，`loginUrl` 必须显式配置，否则跳到不存在的 `/login.html`。
+  - 账户中心数据在内存，登记作品后须重启服务；重启后旧会话/验证码失效。
+  - 未 `git commit`、未部署。
+
+## 2026-10-28 会话条目：新增《孙子算经》鸡兔同笼（第 10 题）
+
+- **目标**：用户问「鸡兔同笼来自哪里」，确认出处为《孙子算经》卷下第 31 题后，按站内五段结构做成第 10 个命题页。
+- **已做**：
+  - 新增 `sunzi-jitu.md`：原文（繁体，题干 + 答语 + 术文前半段）、白话 3 步、4 条 sympy 断言、3 题练习、出处；`proofreader` 仍为待定。
+  - 新增 `JituCage.astro`：35 个头色块 + 脚数条（蓝 = 鸡 2 脚、金 = 兔 4 脚，虚线标 94），拖滑块把鸡换成兔，命中 94 时高亮；纯 DOM + CSS，不引 JSXGraph。
+  - `[slug].astro` 注册 `jitu-cage`；`plan/版权台账.csv` 追加 1 行（合计 10 条）。
+  - 首页：统计改「10 道古题」，文案改「十道古题 / TEN PROBLEMS / 十题，十张图」，第 10 张卡（孙子算经）满行独占。
+  - README / Running / RPD（v0.4 → v0.5）同步为 10 题；`web/package.json` 0.8.2 → 0.9.0。
+- **关键结论/决定**：
+  - 底本按汉典古籍李淳风注本逐字核对（维基文库本次打不开）；术文后半段「再命之，上三除下三……」诸本文义有歧，只录到「以少减多」，台账备注待二次核验。
+  - 交互不引 JSXGraph：35 个 DOM 色块 + 脚数条更直观，也不增加首屏体积。
+  - 10 张卡在三列网格里会落单，第 10 张改为满行，顺便把「另一本书」与九章九题分开。
+- **产出物（文件/链接）**：
+  - `web/src/content/propositions/sunzi-jitu.md`、`web/src/components/JituCage.astro`
+  - `web/src/pages/propositions/[slug].astro`、`web/src/pages/index.astro`、`plan/版权台账.csv`、`plan/RPD_需求文档.md`、`README.md`、`usage/Running.md`、`web/package.json`
+- **验证**：
+  - `npm run build`：台账 10 条通过；sympy 32 条断言全过（鸡兔同笼 4/4）；生成 12 个页面，`/propositions/sunzi-jitu/` 与 sitemap 均含新页；0 报错。
+  - 首页产物含 10 个 `data-proposition-id`。
+- **待办**：
+  - 浏览器抽查滑块拖动与「12 只兔」命中态；手机宽度看 35 个头色块换行。
+  - 换维基文库/影印本复核底本；外部审校。
+  - 部署需用户确认（线上仍是 9 题）。
+- **风险/注意事项**：
+  - 未 `git commit`、未部署。
+  - 台账「核验状态」仍为待二次核验；术文后半段未录。
+
+## 2026-10-27 会话条目：sympy 审核闸 + /lab 组件库 MVP（v0.10.0）
+
+- **目标**：按「数学乐中英文版对比分析」的结论，落地两件最能复用的事——**内容数字机器复算**与**交互原语组件库**，用最小验证做出可跑的 MVP。
+- **已做**：
+  - 新建 `plan/规划_审核闸与组件库MVP.md`（v0.1）：固化五条上游结论、A/B 两条线、5 条验收标准、明确不做项、L1–L4 路线。
+  - 审核闸：`web/scripts/math_gate.py`（sympy 解析 + 解方程/求值 + 结构校验）、`web/scripts/run-math-gate.mjs`（自动选 `.venv` 解释器，fail-closed）；`package.json` 的 `build` 改为 台账 → 审核闸 → `astro build`，另加 `check:math`。
+  - 内容模型：`content.config.ts` 增加 `checks` 数组（至少 1 条，`expect` 支持字符串/数字/列表）；10 个命题全部补齐（32 条断言）。
+  - `/lab`：`web/src/components/lab/` 六个原语（CoordPlane / SliderControl / DragPoint / NumberLine / FractionBar / Protractor）+ `pages/lab/index.astro` + `styles/lab.css`；统一 `mc:*` 事件与 `mcGet*` / `mcSetValue` 接口。
+  - 三个组合演示（盈不足、衰分、方田）只用原语 + 少量胶水代码拼装。
+  - 文档回灌：README、RPD（v0.5 → v0.6，新增阶段 4）、Running（Python/venv、`check:math`、`/lab`、checks 写法）；`.gitignore` 补 `.venv/`；版本 0.9.0 → 0.10.0。
+- **关键结论/决定**：
+  - 审核闸只当质检员：验数字对错，不判断讲得好不好懂；`label` 必须能在正文找到对应结论。
+  - 组件用纯 SVG/DOM + Pointer Events，不引新运行时依赖；键盘（方向键 / Shift / Home / End）与触屏同权。
+  - 初始位置在服务端算好，避免 JS 未加载时控件错位。
+  - 组合页只允许「原语 + 胶水」，新页面先问「能不能用 6 个原语拼」。
+- **产出物（文件/链接）**：
+  - `plan/规划_审核闸与组件库MVP.md`
+  - `web/scripts/math_gate.py`、`web/scripts/run-math-gate.mjs`
+  - `web/src/components/lab/*.astro`（6 个）、`web/src/pages/lab/index.astro`、`web/src/styles/lab.css`
+  - `web/src/content.config.ts`、10 个命题 Markdown、`web/package.json`
+- **验证**：
+  - `npm run check:math`：10 个命题 · 32 条断言 · 全部通过。
+  - 故意把盈不足「物价（原题）」`expect` 改 54 → 输出 `✗ 物价（原题） 期望 54，实算 53`、退出码 1；已改回。
+  - `npm run build`：台账通过 + 审核闸通过 + 生成 12 页（含 `/lab/index.html`）。
+  - 本地静态服务 `http://localhost:8941/lab/` 返回 200，已用 Chrome 打开。
+  - 未做：真机拖动 / 375px 横向滚动的浏览器内实测。
+- **待办**：
+  - 浏览器实测：6 个组件的拖动与键盘、3 个组合演示数值、375px 无横向滚动。
+  - L2：补原语到 20 个；把现有 10 页里可复用的 JSXGraph 交互逐步迁到原语。
+  - 外部审校仍为「待定」，发布前必须补齐。
+- **风险/注意事项**：
+  - `checks` 可能与正文脱节（正文改数、断言没改）；靠 label 对应 + 审校兜底。
+  - 另一会话在并发改同一仓库（README / Base.astro / package.json 版本），改文档前先重读。
+  - 未 `git commit`、未部署；线上仍是 10 题版本，`/lab` 未发布。
+
+## 2026-10-28 会话条目：三条内容线分栏目（v0.11.0）
+
+- **目标**：用户确认「数学乐」按 A 处理——不照搬、不单独开站，而是在现有站内新增一条原创「趣味数学」线；先判断三条线是合并还是拆分，再把现有内容按书分栏目。
+- **已做**：
+  - `web/src/site.ts` 新增 `lines` 配置：`jiuzhang` / `sunzi`（live）与 `fun`（soon）；`name` 与命题 Markdown 的 `line` 字段对齐，新增内容线只改这一处。
+  - 新增 `web/src/pages/[line]/index.astro`：只为 live 线生成 `/jiuzhang/`、`/sunzi/` 栏目页，列出本书题目、章节与摘要，带线间导航。
+  - 首页命题区按书分组：九章 9 题、孙子 1 题，每组带题数与「进入本书」；孙子单题满行；第三条线只露一条「筹备中」虚线预告，不生成空页。
+  - 顶栏「命题」在栏目页高亮；`sitemap.xml` 补两条栏目页。
+  - 文档回灌：README、RPD（v0.6 → v0.7，新增阶段 5）；`web/package.json` 0.10.1 → 0.11.0。
+- **关键结论/决定**：
+  - 三条线是**一个站内的栏目**，不拆域名/不拆站：共用品牌、备案、服务器、组件、进度与登录；拆站会分 SEO 权重、运维 ×3。
+  - 「数学乐」只作风格参考，不复刻内容、不拿它当栏目名；第三条线定名「趣味数学」，内容必须原创或有公版来源。
+  - 筹备中的内容线不生成空页面，只做首页预告，避免空壳页损害 SEO 与可信度。
+  - 命题页 URL 保持 `/propositions/<id>/` 不变，栏目页只做入口，旧链接不失效。
+- **产出物（文件/链接）**：
+  - `web/src/site.ts`、`web/src/pages/[line]/index.astro`、`web/src/pages/index.astro`、`web/src/layouts/Base.astro`、`web/src/pages/sitemap.xml.ts`
+  - `README.md`、`plan/RPD_需求文档.md`、`web/package.json`
+- **验证**：
+  - `npm run build`：台账 10 条、sympy 32 条断言全过；生成 14 页，含 `/jiuzhang/`、`/sunzi/`；sitemap 13 条 URL。
+  - 产物检查：首页 10 个 `data-proposition-id`、两条栏目入口、1 条「筹备中」预告；`/jiuzhang/` 9 个题目链接、`/sunzi/` 1 个；两页 canonical/title 正确。
+  - 本机 `astro preview` 已在 `http://localhost:4321/` 用 Chrome 打开，待目视复核。
+- **待办**：
+  - 目视复核：首页分组后是否仍一屏放完、矮屏不溢出；栏目页卡片排布与移动端。
+  - 「趣味数学」首批原创选题（选题、来源、审核方式）另立规划。
+  - 部署需用户确认（线上仍是 10 题、无栏目页）。
+- **风险/注意事项**：
+  - `line` 字段是中文书名，与 `site.ts` 的 `name` 必须逐字一致，否则该题不会出现在任何分组。
+  - 本机已有 preview 进程占用 4321，重复启动会提示换端口；直接复用旧进程即可读新 `dist`。
+  - 未 `git commit`、未部署。
+
+## 2026-10-28 会话条目：首页改为三栏目门户（v0.12.0）
+
+- **目标**：按用户要求改回「一个主页 → 三个模块栏目」：首页只放入口，九章算术 / 孙子算经 / 趣味数学各自点进栏目页；趣味数学按「数学乐」的思路做原创图解 + 小交互。
+- **已做**：
+  - 重写 `web/src/pages/index.astro`：英雄区（站名、介绍、10 题 / 3 线 / 3 分钟、两个按钮、勾股循环作图）+ 三张栏目卡 + 本机进度 + 读法四步 + 关于/勘误；首页不再列具体题目。
+  - `web/src/site.ts`：三条线加 `summary`；`fun` 增 `topics`（数与运算、图形与测量、比例与百分数、数据与概率、趣味谜题）；更新站点 description。
+  - `web/src/pages/[line]/index.astro`：三条线都生成栏目页；无题目的 `fun` 显示「筹备中」面板 + 首批方向，不编造题目；题目卡固定 3 列（窄屏 2/1 列），单题栏目限宽 420px。
+  - `web/src/layouts/Base.astro`：导航改为「内容 / 读法 / 关于」，内容在首页与栏目页高亮。
+  - `sitemap.xml` 收三条栏目页；README、RPD（v0.8，阶段 5 改写）同步；版本 0.11.0 → 0.12.0。
+- **关键结论/决定**：
+  - 首页只做门户，题目卡下沉到栏目页；用户要的是「先选模块，再看题」，不是首页堆十张卡。
+  - 趣味数学栏目页可以进，但没有题目时明确标「筹备中」，只列方向，不用占位题充数。
+  - 继续一个站、一个域名、三条栏目线，不拆站。
+- **产出物（文件/链接）**：
+  - `web/src/pages/index.astro`、`web/src/pages/[line]/index.astro`、`web/src/site.ts`、`web/src/layouts/Base.astro`、`web/src/pages/sitemap.xml.ts`
+  - `README.md`、`plan/RPD_需求文档.md`、`web/package.json`
+- **验证**：
+  - `npm run build`：台账 10 条、sympy 32 条断言全过；16 页（含 `/jiuzhang/`、`/sunzi/`、`/fun/`）；sitemap 14 条。
+  - 产物检查：首页 3 张栏目卡、0 张题目卡（仅 1 个「先做一题」按钮直达首题）；`/jiuzhang/` 9 个题目链接、`/sunzi/` 1 个、`/fun/` 5 个首批方向；导航 3 项。
+  - `astro preview` 重启后 `/`、`/fun/`、`/jiuzhang/` 均 200，Chrome 已打开 `http://localhost:4321/?v=portal2`。
+- **待办**：
+  - 目视复核：首页英雄区与三卡在桌面/手机的比例，栏目页 3 列与单题限宽。
+  - 「趣味数学」首批选题与内容来源（原创 / 公版）另立规划。
+  - 部署需用户确认；未 `git commit`。
+- **风险/注意事项**：
+  - 首页不再显示逐题「已做完」状态，只保留总进度；若要恢复逐题状态，应在栏目页加，不回首页堆卡。
+  - 趣味数学栏目页含「筹备中」状态，避免被搜索引擎当成完整内容页；上线后可先 noindex 或补齐首批内容。
+  - `site.ts` 的 `line.name` 与命题 `line` 仍须逐字一致。
+
+## 2026-10-28 会话条目：首页读法排版修复 + 趣味数学接主题（v0.13.1）
+
+- **目标**：修掉首页「读法」四步正文竖排崩坏；把「趣味数学」模块从空壳筹备页接到已有 `/topics/` 真实主题。
+- **已做**：
+  - `web/src/pages/index.astro`：读法区类名由 `mc-steps` 改为 `mc-howsteps`，重写为卡片式（编号圆章 + 标题 + 说明），不再命中 `global.css` 里命题页专用的 `.mc-steps li{grid-template-columns:2.2rem 1fr}`。
+  - 首页栏目卡按内容类型计数：九章 / 孙子数命题，趣味数学数 `topics` 集合（显示「3 个主题」）。
+  - `web/src/site.ts`：`fun` 由 `soon` 改 `live`，intro 写明已上线三个主题与原创口径。
+  - `web/src/pages/[line]/index.astro`：`fun` 栏目页直接列 `/topics/` 的 3 个主题卡（分类·难度 / 标题 / 摘要），下方小字写还在筹备的方向；无内容时才回退「筹备中」面板；恢复单题限宽逻辑。
+- **关键结论/决定**：
+  - 全局 `.mc-steps` 保持不动（命题页与 `/lab` 依赖），首页用独立类名，符合「旧代码不改，新功能写新模块」。
+  - 「趣味数学」不再另起一套内容，与 `/topics/` 共用同一批主题页，避免两份空壳。
+- **产出物（文件/链接）**：
+  - `web/src/pages/index.astro`、`web/src/pages/[line]/index.astro`、`web/src/site.ts`
+  - `README.md`、`plan/RPD_需求文档.md`（v0.9）、`web/package.json`（0.13.0 → 0.13.1）
+- **验证**：
+  - `npm run build`：台账 10 条、sympy 32 条断言全过；20 页构建成功。
+  - 产物检查：`dist/index.html` 含 4 个 `mc-howsteps__no` 与「3 个主题」；`dist/fun/index.html` 含 3 张主题卡。
+  - `astro preview` 下 `/`、`/fun/` 均 200；Chrome 打开 `http://localhost:4321/?v=fix1`。
+- **待办**：
+  - 目视复核桌面 / 手机宽度下读法四卡与 `/fun/` 三卡。
+  - 继续补主题线方向：数与运算、图形与测量、数据与概率、趣味谜题。
+  - 部署与 `git commit` 仍需用户确认（线上仍是 10 题版本，无栏目页与「主题」入口）。
+- **风险/注意事项**：
+  - 首页与 `/topics/` 两处都列主题，新增主题时以 topics 集合为唯一数据源，无需改页面。
+  - `/fun/` 与 `/topics/` 内容重复度高，后续如需精简要考虑用 301 收敛到一处。
+
+## 2026-10-28 会话条目：首页英雄区作图空白修复 + 趣味数学对齐课程体系（v0.14.1）
+
+- **目标**：修首页英雄区右侧勾股作图整块空白（只剩两条虚线辅助线）；让「趣味数学」栏目与已有 6 大类 / 104 主题的课程体系一致。
+- **已做**：
+  - `web/src/components/StageLoop.astro`：删掉已失效的 `document.addEventListener('mc:loop')` 滚动驱动（首页改门户后没人再广播），改为自动演示：7.6 秒画完 → 停 1.8 秒 → 重播；拖动时暂停、松手从当前位置续播；`prefers-reduced-motion` 只出终图；提示文案「滚动作图」→「自动作图」。
+  - `web/src/pages/index.astro`：趣味数学卡计数改为课程体系主题总数（104），单位「个主题」。
+  - `web/src/pages/[line]/index.astro`：`/fun/` 改为列 `curriculum` 的 6 个大类卡（章节数 · 主题数 → `/topics/<section>/`），底部注明已写完数量与 `/topics/` 搜索入口。
+  - `web/src/site.ts`：`fun.intro` 改为「大类 → 章节 → 主题」的体系口径。
+- **关键结论/决定**：
+  - 英雄区作图不再依赖滚动：门户首页没有长滚动段落，滚动驱动会永远停在 0 → 全透明。
+  - 趣味数学的唯一计数真源是 `src/data/curriculum.ts`；已写完数量才看 `topics` 集合。
+- **产出物（文件/链接）**：
+  - `web/src/components/StageLoop.astro`、`web/src/pages/index.astro`、`web/src/pages/[line]/index.astro`、`web/src/site.ts`
+  - `README.md`、`plan/RPD_需求文档.md`、`web/package.json`（0.14.0 → 0.14.1）
+- **验证**：
+  - `npm run build`：127 页；`dist/index.html` 内联脚本含 `7600` 且已无 `mc:loop`；首页显示「104 个主题」，`/fun/` 显示「共 104 个主题 · 已写完 3 个」与 6 张分类卡。
+  - Chrome 打开 `http://localhost:4321/?v=fix2` 与 `/fun/`。
+- **待办**：
+  - 目视复核：英雄区作图在桌面 / 手机宽度下的比例，`/fun/` 六卡换行。
+  - 部署与 `git commit` 仍需用户确认。
+- **风险/注意事项**：
+  - 本仓库当时有另一个会话在并行改 `/topics` 体系（curriculum.ts、topics 页面、README v0.14.0），本次只动了首页 / 栏目页 / StageLoop，未碰 topics 体系文件。
+  - 自动播放会持续占用 rAF；已用 `document.hidden` 在后台标签页暂停。
+
+## 2026-10-28 会话条目：math.chesterlee.cn 上线（门户版 + 补两篇主题）
+
+- **目标**：把门户版推到线上 `https://math.chesterlee.cn`，并带上并行会话新增的两篇主题正文。
+- **已做**：
+  - 按台账 §2.1 执行 `cd web && npm run build`（台账 10 条 + sympy 32 条断言通过，127 页）→ `rsync -az --delete -e "ssh -i ~/.ssh/chesterlee_web" dist/ ubuntu@43.136.92.125:/srv/chesterlee/math/`。
+  - 第一次发布（13:41）为门户版；14:53 重新构建后再推一次，纳入 `equivalent-fractions`、`simplifying-fractions` 两篇主题与配套组件。
+  - 回填台账：`部署上线备案/README.md` §二 `math` 行改「门户版：10 题 + 104 个主题目录」；§六 追加两条变更日志。
+  - 项目 `README.md` 顶部状态改为门户版（已写完 5 个）。
+- **关键结论/决定**：
+  - 发布命令固定用台账 §2.1 的 rsync（`--delete` 与源保持一致），静态站无需 reload Caddy。
+  - 内容有更新就重跑 build 再 sync，不做增量手传。
+- **产出物（文件/链接）**：
+  - 线上：`https://math.chesterlee.cn`（`/jiuzhang/`、`/sunzi/`、`/fun/`、`/topics/`）
+  - 台账：`/Users/Admin/Knowledge/Coding/部署上线备案/README.md` §二 + §六
+- **验证**：
+  - 9 条关键 URL 全 200（含 `/topics/numbers/equivalent-fractions/`、`/topics/numbers/simplifying-fractions/`、`/sitemap.xml`）。
+  - 线上 `/fun/` 显示「共 104 个主题 · 已写完 5 个」，首页显示「104 个主题」。
+  - `health.sh math.chesterlee.cn` 全绿：HTTP 200 / 备案号 ✅ / 版权 ✅ / 证书 2027-01-25（剩 89 天）。
+- **待办**：
+  - `git commit` 与打 tag 尚未执行（需用户确认）。
+  - 继续补主题正文（目录 104 个，已写完 5 个）。
+- **风险/注意事项**：
+  - 仓库仍有并行会话在改 `/topics` 体系；发布前要先 `find web/src -newer web/dist/index.html` 确认是否漏发。
+  - `rsync --delete` 会删服务器多出来的文件，属预期行为，勿在服务器上手工放文件。
+
+## 2026-10-28 会话条目：首页改通栏（v0.14.2）
+
+- **目标**：首页在宽屏上左右留白太多（内容被 1120px 限宽），改成占满全屏。
+- **已做**：
+  - `web/src/pages/index.astro`：`<Base title={site.name} full>`，`mc-main` 不再限宽；首页页脚用 `:global(.mc-html--home) :global(.mc-footer){max-width:none}` 一起放开（其他页仍是 1120px）。
+  - 英雄区高度 `min-height: min(70vh,660px)` → `clamp(560px, calc(100svh - 180px), 860px)`，首屏基本铺满。
+  - `.mc-about__body p` 加 `max-width: 44rem`，超宽屏下行宽不过长。
+- **关键结论/决定**：
+  - 用 Base 既有的 `full` 开关（`/topics/` 也在用），不再给首页单独造一套布局容器。
+  - 首屏高度用 `svh` 而非 `vh`，避免移动端地址栏收放导致跳动。
+- **产出物（文件/链接）**：
+  - `web/src/pages/index.astro`、`web/package.json`（0.14.1 → 0.14.2）、`README.md`
+- **验证**：
+  - `npm run build` 127 页通过；产物 `dist/index.html` 含 `mc-main mc-main--full`，栏目页则无；`dist/_astro/index.*.css` 里有 `.mc-html--home .mc-footer{max-width:none}`。
+  - 已 `rsync` 部署，线上首页 HTML 确认 `mc-main--full`；`health.sh math.chesterlee.cn` 全绿（200 / 备案号 ✅ / 版权 ✅ / 证书剩 89 天）。
+- **待办**：
+  - 目视确认 27 寸 / 小屏两档：三张栏目卡不要拉得过宽，必要时给 `mc-modgrid` 加每列上限。
+  - `git commit` 仍未执行（需用户确认）。
+- **风险/注意事项**：
+  - 首页页脚通栏是**只在首页**生效的覆盖；其他页面保持 1120px，避免影响命题页阅读。
+  - 画布（英雄区）在超宽屏会变很宽，若嫌空可再限制舞台列宽。
+
+## 2026-10-28 会话条目：英雄区作图放大 + 放慢（v0.14.3）
+
+- **目标**：首页勾股作图在卡片里太小、切换太快（每段线「唰」地跳出来）。
+- **已做**：
+  - `StageLoop.astro`：`viewBox "20 70 480 500"` → `"40 88 440 456"`，去掉四周多余留白，图形按高度吃满舞台。
+  - `index.astro`：`.mc-hero__stage` 高 `clamp(320px,42vh,440px)` → `clamp(380px,54vh,640px)`，内边距 16/18 → 12/14；移动端 300 → 340、240 → 300。
+  - `StageLoop.astro` 脚本：一轮 `DURATION` 7600 → 13200 ms，停留 `HOLD` 1800 → 2800 ms；缓动 `easeOut`（开头最快）→ `easeInOut`（起笔收笔都减速）。
+- **关键结论/决定**：
+  - 「跳」的主因不是时长，而是 easeOut 让每段线一开始就冲到 80%，观感像瞬移；换 easeInOut 后同样时长也顺很多。
+  - 放大用「收 viewBox」而不是放大 stroke/字体，避免线宽和字号失真。
+- **产出物（文件/链接）**：
+  - `web/src/components/StageLoop.astro`、`web/src/pages/index.astro`、`web/package.json`（0.14.3）、`README.md`
+- **验证**：
+  - `npm run build` 127 页通过；线上 HTML 已确认 `viewBox="40 88 440 456"` 与 `13200`。
+  - 已 `rsync` 部署；`health.sh math.chesterlee.cn` 全绿（200 / 备案号 ✅ / 版权 ✅ / 证书剩 89 天）。
+- **待办**：
+  - 若还想更慢/更大，只调 `DURATION`、`HOLD` 与 `.mc-hero__stage` 高度两处即可。
+  - `git commit` 仍未执行（需用户确认）。
+- **风险/注意事项**：
+  - viewBox 已收到边，再收会切掉「九 + 十六 = 二十五」这行小字；改图形坐标时记得同步 viewBox。
+  - 拖动回看逻辑不受时长影响（按 `startProgress` 换算）。
+
+## 2026-10-28 会话条目：收窄英雄区中缝（v0.14.4）
+
+- **目标**：1920 宽屏下标题与作图之间的空隙约 360px，看着很散。
+- **已做**：
+  - `.mc-hero` 加 `max-width: 1560px; margin-inline: auto`；两栏 `minmax(0,0.88fr)/1.12fr` → `0.94fr/1.06fr`；`gap` 由 `clamp(32px,5vw,72px)` 收到 `clamp(24px,3vw,56px)`。
+  - `h1` 字号 `clamp(58px,9vw,120px)` → `clamp(58px,8vw,150px)`，让标题占满左栏（原来左栏 830 只用了 700）。
+  - 原 `border-bottom` 移到 `.mc-hero::after`（`left: calc(50% - 50vw); width: 100vw`），内容限宽后分隔线仍通栏。
+- **关键结论/决定**：
+  - 空隙不是栏间距造成的（只有 72px），而是左栏内容（标题 4 字）撑不满栏宽；所以「标题放大 + 限总宽」比单纯缩 gap 有效。
+  - 通栏与可读性冲突时：**章节/分隔线通栏、具体内容限宽**，页面看着满、行宽又不失控。
+- **产出物（文件/链接）**：
+  - `web/src/pages/index.astro`、`web/package.json`（0.14.4）、`README.md`
+- **验证**：
+  - `npm run build` 127 页通过；已 `rsync` 部署；`health.sh math.chesterlee.cn` 全绿（200 / 备案号 ✅ / 版权 ✅ / 证书剩 89 天）。
+  - 估算各档位：1920 → 中缝 ≈118px；1440 → ≈102px；1200 → ≈79px（原 1920 约 360px）。
+- **待办**：
+  - 若嫌 1560 两侧仍空，可改 1680（中缝会回升到 ~170px）。
+  - `git commit` 仍未执行（需用户确认）。
+- **风险/注意事项**：
+  - `::after` 用 `100vw` 画通栏线，依赖 body 的 `overflow-x: hidden`；若以后去掉该属性会出现横向滚动条。
+  - 标题上限 150px 时左栏需 ≥645px，窄于 900 会切到单栏布局，不会溢出。
+
+## 2026-10-28 会话条目：压掉英雄区顶部空档（v0.14.5）
+
+- **目标**：顶栏与首页首屏文字之间有大段空白（约 190px）。
+- **已做**：
+  - `.mc-home` 顶部内边距 `clamp(96px, 14vh, 150px)` → `clamp(92px, 10vh, 120px)`。
+  - `.mc-hero` 的 `min-height: clamp(560px, 100svh-180px, 860px)` → `min-height: 0`，`padding-bottom` 96 → ≤72：英雄区改为随内容高度，不再把内容垂直居中顶到页面中部。
+- **关键结论/决定**：
+  - 空档是「撑满首屏」的设计副作用：`min-height` 很高 + `align-items: center`，内容只有 400 多px，于是上下一块均分空白。
+  - 结论：首页不做「整屏英雄」，改为紧凑首屏，第二屏直接从栏目卡开始。
+- **产出物（文件/链接）**：
+  - `web/src/pages/index.astro`、`web/package.json`（0.14.5）、`README.md`
+- **验证**：
+  - `npm run build` 127 页通过；已 `rsync` 部署；`health.sh math.chesterlee.cn` 全绿（200 / 备案号 ✅ / 版权 ✅ / 证书剩 89 天）。
+  - 顶部空档由 ~190px 降到 ~30px（顶栏 66px + 内边距 92px 起排）。
+- **待办**：
+  - 若希望首屏再往下带一点栏目卡，可把舞台高 `54vh` 调到 `48vh`。
+  - `git commit` 仍未执行（需用户确认）。
+- **风险/注意事项**：
+  - 现在首页不再「一屏一张图」，滚动后会立刻看到栏目卡；如果之后想回到整屏版，恢复 `min-height` 即可。
+  - 移动端（≤900px）原本就 `min-height: 0`，不受影响。
+
+## 2026-10-28 会话条目：首页减字（v0.14.6）
+
+- **目标**：首页描述性文字太多，要「简单简洁，只介绍核心内容」。
+- **已做**：
+  - 英雄区导语 41 字 → 12 字：「古算书原题，白话拆解，动手作图。」
+  - 内容线区删掉说明段落（保留 eyebrow + 标题 + 三张卡）。
+  - 读法区：删说明段落与四条解释，四步由卡片改为一行「编号 + 名称」标签，字号 22 → 19、圆章 34 → 28。
+  - 关于：4 段 → 2 段（底本 / 隐私与勘误），实验台链接保留。
+- **关键结论/决定**：
+  - 首页只留「是什么 + 三条线 + 怎么用 + 出处」，具体解释交给栏目页与命题页。
+  - 信息密度不够时靠留白和字号层级，不靠补文案。
+- **产出物（文件/链接）**：
+  - `web/src/pages/index.astro`、`web/package.json`（0.14.6）、`README.md`
+- **验证**：
+  - `npm run build` 127 页通过；已 `rsync` 部署；`health.sh math.chesterlee.cn` 全绿（200 / 备案号 ✅ / 版权 ✅ / 证书剩 89 天）。
+- **待办**：
+  - 卡片里的 summary 仍是一句话，若还嫌多可只留书名 + 数量。
+  - `git commit` 仍未执行（需用户确认）。
+- **风险/注意事项**：
+  - `#reading` 锚点仍在（导航「读法」可用）；删掉的是说明文字不是锚点。
+  - `.mc-howsteps` 规则已改为 flex，若以后加回描述需恢复 grid。
+
+## 2026-10-28 会话条目：合并「主题」入口（v0.14.7）
+
+- **目标**：顶栏「主题」与「趣味数学」是同一套 104 个主题的两个入口、两个名字、两种版式，用户觉得割裂；合并成一个入口。
+- **已做**：
+  - 抽出 `web/src/components/TopicsHub.astro`：把原 `/topics/` 页的搜索 + 6 大类卡 + 章节列表 + 进度 + sympy 说明整体搬进去，用 `.mc-topics--embed` 抹掉页面级留白。
+  - `web/src/pages/[line]/index.astro`：`sections.length > 0` 分支直接渲染 `<TopicsHub />`（`/fun/` 即总览）。
+  - `web/src/layouts/Base.astro`：删除「主题」导航项，`isModule` 把 `/topics` 并入「内容」高亮。
+  - `web/astro.config.mjs`：`redirects: { '/topics': '/fun/' }`。
+  - 删除 `web/src/pages/topics/index.astro`；`[section].astro` 与 `[section]/[slug].astro` 的面包屑、文末链接改指 `/fun/`。
+- **关键结论/决定**：
+  - 一条内容只留一扇门：总览是 `/fun/`，具体主题页仍是 `/topics/<大类>/<主题>/`，路径不变、外链不断。
+  - 旧地址靠 `astro.config` 的 `redirects` 生成 meta refresh 跳转页（带 `noindex` 与 canonical），不另写页面。
+- **产出物（文件/链接）**：
+  - `web/src/components/TopicsHub.astro`（新）、`web/src/pages/[line]/index.astro`、`web/src/layouts/Base.astro`、`web/astro.config.mjs`、`web/src/pages/topics/[section].astro`、`web/src/pages/topics/[section]/[slug].astro`、`web/package.json`（0.14.7）、`README.md`
+- **验证**：
+  - `npm run build` 126 页通过（原 127，少的是被删的 `/topics/index` 实体页）；`dist/fun/index.html` 有 6 个 `mc-section-card` 与 1 份 `topic-index` JSON，`dist/jiuzhang/index.html` 仍是 9 张古题卡，`dist/topics/index.html` 是 `Redirecting to: /fun/`。
+  - 已 `rsync` 部署；线上 `/fun/`、`/topics/`、`/topics/numbers/`、`/topics/numbers/fractions/` 全 200；`health.sh math.chesterlee.cn` 全绿。
+- **待办**：
+  - `/fun/` 页头文案仍是「一页讲清一个概念」，可按「趣味数学」口径再核一遍。
+  - 1920 宽屏下三张栏目卡宽度待目视确认。
+  - `git commit` 仍未执行（需用户确认）。
+- **风险/注意事项**：
+  - `topics` 的 104 个主题页一直不在 sitemap 里（既有行为），本次未动。
+  - 若以后想恢复独立总览页，把 `TopicsHub` 重新包一层页面、删掉 redirects 即可，组件本身无需改。
+
+
+
+
+
+
+
+
+
+
 

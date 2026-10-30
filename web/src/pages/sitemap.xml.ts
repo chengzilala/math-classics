@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { site } from '../site';
+import { lines, site } from '../site';
 
 export const GET: APIRoute = async () => {
   if (new URL(site.url).hostname === 'example.com') {
@@ -10,6 +10,7 @@ export const GET: APIRoute = async () => {
   const propositions = await getCollection('propositions');
   const paths = [
     '/',
+    ...lines.map((line) => `/${line.slug}/`),
     ...propositions.map((entry) => `/propositions/${entry.data.id}/`),
   ];
 

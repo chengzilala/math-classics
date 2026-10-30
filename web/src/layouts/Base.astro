@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { site } from '../site';
+import { lines, site } from '../site';
 
 interface Props {
   title: string;
@@ -14,20 +14,28 @@ const canonical = new URL(Astro.url.pathname, site.url).href;
 const ogImage = new URL('/og.png', site.url).href;
 const path = Astro.url.pathname;
 const isHome = path === '/';
-const isPropositions = path.startsWith('/propositions');
+const isModule =
+  path.startsWith('/propositions') ||
+  path.startsWith('/topics') ||
+  lines.some((line) => path === `/${line.slug}/`);
+
+// 账户中心：本机开发时接口在 8942、页面在 18830；线上两者同域
+const accountApiBase = import.meta.env.DEV ? 'http://localhost:8942' : site.account.apiBase;
+const accountLoginUrl = import.meta.env.DEV ? 'http://localhost:18830/login.html' : site.account.loginUrl;
+const accountUrl = import.meta.env.DEV ? 'http://localhost:18830/account.html' : site.account.accountUrl;
+// 账户中心按 productId 读取登记的主题配色，带上它「我的账户」才会用本站的深色金线皮肤
+const accountPageUrl = (() => {
+  const url = new URL(accountUrl);
+  url.searchParams.set('productId', site.account.productId);
+  return url.href;
+})();
 
 const navItems = [
   {
-    key: 'start',
-    label: '起点',
-    href: isHome ? '#start' : '/#start',
-    active: isHome,
-  },
-  {
-    key: 'propositions',
-    label: '命题',
-    href: isHome ? '#propositions' : '/#propositions',
-    active: !isHome && isPropositions,
+    key: 'modules',
+    label: '内容',
+    href: isHome ? '#modules' : '/#modules',
+    active: isHome || isModule,
   },
   {
     key: 'reading',
@@ -66,22 +74,26 @@ const navItems = [
           <path d="M7 26 h18" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.2"></path>
         </svg>
         <span>{site.name}</span>
-        <span class="mc-brand__latin">SUANJING</span>
+        <span class="mc-brand__latin">{site.latin}</span>
       </a>
-      <nav class="mc-nav" aria-label="站点导航">
-        {
-          navItems.map((item) => (
-            <a
-              href={item.href}
-              data-nav={item.key}
-              class:list={[{ active: item.active }]}
-              aria-current={item.active ? 'page' : undefined}
-            >
-              {item.label}
-            </a>
-          ))
-        }
-      </nav>
+      <div class="mc-topbar__end">
+        <nav class="mc-nav" aria-label="站点导航">
+          {
+            navItems.map((item) => (
+              <a
+                href={item.href}
+                data-nav={item.key}
+                class:list={[{ active: item.active }]}
+                aria-current={item.active ? 'page' : undefined}
+              >
+                {item.label}
+              </a>
+            ))
+          }
+        </nav>
+        {/* 可选登录：不登录也能正常使用；账户服务不可用时这个按钮保持隐藏 */}
+        <button type="button" class="mc-account" data-account hidden>登录</button>
+      </div>
     </header>
 
     <div class="mc-ruler" aria-hidden="true">
@@ -97,7 +109,7 @@ const navItems = [
       <p>{site.tagline}</p>
       <p>内容只据公有领域底本整理；原文不改一字，白话与勘误持续修订。</p>
       <p>
-        <a href={site.errataHref}>{site.errataLabel}</a> · 不收集个人信息 · 无广告
+        <a href={site.errataHref}>{site.errataLabel}</a> · 不登录也可使用 · 无广告
       </p>
       <p class="mc-footer__legal">
         © 2026{' '}
@@ -146,6 +158,62 @@ const navItems = [
           revealItems.forEach((item) => item.classList.add('is-in'));
         }
       }
+    </script>
+
+    <script is:inline src="/ps-auth.js"></script>
+    <script is:inline define:vars={{ accountApiBase, accountLoginUrl, accountPageUrl, accountProductId: site.account.productId }}>
+      (function () {
+        var btn = document.querySelector('[data-account]');
+        if (!btn || !window.PSAuth) return;
+
+        var user = null;
+        PSAuth.init({
+          apiBase: accountApiBase,
+          loginUrl: accountLoginUrl,
+          productId: accountProductId
+        });
+
+        function render() {
+          btn.hidden = false;
+          btn.textContent = '';
+          btn.classList.toggle('is-avatar', Boolean(user));
+          if (user) {
+            // 已登录只留头像，不再显示昵称
+            if (user.avatar) {
+              var avatar = document.createElement('img');
+              avatar.className = 'mc-account-avatar';
+              avatar.src = user.avatar;
+              avatar.alt = '';
+              btn.appendChild(avatar);
+            } else {
+              btn.textContent = '我';
+            }
+            btn.title = '已登录 ' + user.uid + '，点击进入我的账户';
+            btn.dataset.state = 'in';
+          } else {
+            btn.textContent = '登录';
+            btn.title = '用统一账户登录，跨设备同步进度（可选）';
+            btn.dataset.state = 'out';
+          }
+        }
+
+        PSAuth.getUser().then(function (current) {
+          user = current;
+          render();
+        }).catch(function () {
+          // 账户服务不可用时不显示入口，做题不受影响
+          btn.hidden = true;
+        });
+
+        btn.addEventListener('click', function () {
+          if (!user) {
+            PSAuth.requireLogin();
+            return;
+          }
+          // 已登录：进账户中心「我的账户」（带 productId，沿用本站配色），退出登录也在那边操作
+          location.href = accountPageUrl;
+        });
+      })();
     </script>
   </body>
 </html>

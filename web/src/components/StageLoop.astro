@@ -1,0 +1,395 @@
+---
+// 左栏连续作图：直尺画勾股 → 圆规以弦作圆 → 直角自现，六拍一轮循环。
+// 只借「圆规 + 直尺连续作图」这种动作节奏，图形与文案自绘（见项目版权规则）。
+---
+
+<figure class="mc-loop" data-loop aria-hidden="true">
+  <svg class="mc-loop__art" viewBox="40 88 440 456" preserveAspectRatio="xMidYMid meet" focusable="false">
+    <g class="mc-loop__grid">
+      <line x1="48" y1="420" x2="470" y2="420"></line>
+      <line x1="150" y1="110" x2="150" y2="448"></line>
+    </g>
+
+    <g class="mc-loop__figure" data-part="figure">
+      <line class="mc-loop__seg" data-part="gu" x1="150" y1="420" x2="150" y2="132"></line>
+      <line class="mc-loop__seg" data-part="gou" x1="150" y1="420" x2="366" y2="420"></line>
+      <line class="mc-loop__seg" data-part="xian" x1="150" y1="132" x2="366" y2="420"></line>
+
+      <circle
+        class="mc-loop__arc"
+        data-part="circle"
+        cx="258"
+        cy="276"
+        r="180"
+        transform="rotate(-127 258 276)"></circle>
+
+      <path class="mc-loop__angle" data-part="angle" d="M150 398 L172 398 L172 420"></path>
+
+      <g class="mc-loop__dots">
+        <circle data-part="dot-v" cx="150" cy="420" r="3.6"></circle>
+        <circle data-part="dot-t" cx="150" cy="132" r="3.6"></circle>
+        <circle data-part="dot-r" cx="366" cy="420" r="3.6"></circle>
+        <circle class="is-blue" data-part="dot-m" cx="258" cy="276" r="3"></circle>
+      </g>
+
+      <g class="mc-loop__labels">
+        <text data-part="lab-gu" x="66" y="276" text-anchor="middle" transform="rotate(-90 66 276)">股 四</text>
+        <text data-part="lab-gou" x="258" y="474" text-anchor="middle">勾 三</text>
+        <text data-part="lab-xian" x="325" y="325" transform="rotate(53.13 325 325)">弦 五</text>
+        <text class="mc-loop__note" data-part="note" x="258" y="528" text-anchor="middle">九 + 十六 = 二十五</text>
+      </g>
+    </g>
+  </svg>
+
+  <figcaption class="mc-loop__cap">
+    <span class="mc-loop__step" data-loop-step>01</span>
+    <span class="mc-loop__of">/ 06</span>
+    <span class="mc-loop__bar"><b data-loop-fill></b></span>
+    <span class="mc-loop__title" data-loop-title>画股 · 四</span>
+    <span class="mc-loop__hint">自动作图 · 可拖动回看</span>
+  </figcaption>
+
+  <div class="mc-loop__beats" data-loop-beats>
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+</figure>
+
+<style>
+  .mc-loop {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    margin: 0;
+    pointer-events: auto;
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mc-loop.is-drag {
+    cursor: grabbing;
+  }
+
+  .mc-loop__art {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .mc-loop__grid line {
+    stroke: rgba(236, 230, 214, 0.08);
+    stroke-width: 1;
+    stroke-dasharray: 3 10;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .mc-loop__seg,
+  .mc-loop__arc,
+  .mc-loop__angle {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    /* 首帧先藏起来，等脚本量好线长再逐段露出，避免闪一下整图 */
+    stroke-dasharray: 2000;
+    stroke-dashoffset: 2000;
+  }
+
+  .mc-loop__figure,
+  .mc-loop__dots circle,
+  .mc-loop__labels text {
+    opacity: 0;
+  }
+
+  .mc-loop__seg {
+    stroke: var(--mc-accent);
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 6px rgba(217, 178, 95, 0.28));
+  }
+
+  .mc-loop__arc {
+    stroke: var(--mc-blue);
+    stroke-width: 1.1;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 6px rgba(106, 168, 255, 0.28));
+  }
+
+  .mc-loop__angle {
+    stroke: rgba(217, 178, 95, 0.7);
+    stroke-width: 1.2;
+  }
+
+  .mc-loop__dots circle {
+    fill: var(--mc-accent);
+    filter: drop-shadow(0 0 5px rgba(217, 178, 95, 0.6));
+  }
+
+  .mc-loop__dots circle.is-blue {
+    fill: var(--mc-blue);
+    filter: drop-shadow(0 0 5px rgba(106, 168, 255, 0.6));
+  }
+
+  .mc-loop__labels text {
+    fill: var(--mc-muted);
+    stroke: none;
+    font-family: var(--mc-serif);
+    font-size: 15px;
+    letter-spacing: 0.12em;
+  }
+
+  .mc-loop__labels .mc-loop__note {
+    fill: var(--mc-accent);
+    font-family: var(--mc-sans);
+    font-size: 13px;
+    letter-spacing: 0.18em;
+  }
+
+  .mc-loop__cap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    color: var(--mc-muted);
+  }
+
+  .mc-loop__step {
+    font-family: var(--mc-serif);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--mc-accent);
+  }
+
+  .mc-loop__of {
+    margin-left: -4px;
+    font-size: 10px;
+    opacity: 0.6;
+  }
+
+  .mc-loop__bar {
+    position: relative;
+    flex: 0 0 56px;
+    height: 1px;
+    background: var(--mc-line-strong);
+  }
+
+  .mc-loop__bar b {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    background: linear-gradient(90deg, var(--mc-accent), rgba(217, 178, 95, 0.2));
+  }
+
+  .mc-loop__title {
+    color: var(--mc-accent);
+    white-space: nowrap;
+  }
+
+  .mc-loop__hint {
+    margin-left: auto;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: rgba(236, 230, 214, 0.3);
+    white-space: nowrap;
+  }
+
+  .mc-loop__beats {
+    display: flex;
+    gap: 6px;
+  }
+
+  .mc-loop__beats span {
+    width: 18px;
+    height: 2px;
+    background: rgba(236, 230, 214, 0.14);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .mc-loop__beats span.is-on {
+    background: var(--mc-accent);
+    box-shadow: 0 0 8px rgba(217, 178, 95, 0.55);
+  }
+</style>
+
+<script>
+  const loop = document.querySelector<HTMLElement>('[data-loop]');
+
+  if (loop) {
+    const figure = loop.querySelector<SVGGElement>('[data-part="figure"]');
+    const circle = loop.querySelector<SVGCircleElement>('[data-part="circle"]');
+    const angle = loop.querySelector<SVGPathElement>('[data-part="angle"]');
+    const stepEl = loop.querySelector<HTMLElement>('[data-loop-step]');
+    const titleEl = loop.querySelector<HTMLElement>('[data-loop-title]');
+    const fillEl = loop.querySelector<HTMLElement>('[data-loop-fill]');
+    const ticks = Array.from(loop.querySelectorAll<HTMLElement>('[data-loop-beats] span'));
+
+    const segs = ['gu', 'gou', 'xian'].map((name) => ({
+      el: loop.querySelector<SVGLineElement>(`[data-part="${name}"]`),
+      len: 0,
+    }));
+
+    const dots = ['dot-v', 'dot-t', 'dot-r', 'dot-m'].map((name) =>
+      loop.querySelector<SVGCircleElement>(`[data-part="${name}"]`),
+    );
+
+    const labels = ['lab-gu', 'lab-gou', 'lab-xian', 'note'].map((name) =>
+      loop.querySelector<SVGTextElement>(`[data-part="${name}"]`),
+    );
+
+    // 六拍：图形推进到哪一拍，由右栏滚动进度决定
+    const BEATS = [
+      { at: 0, no: '01', title: '画股 · 四' },
+      { at: 0.16, no: '02', title: '画勾 · 三' },
+      { at: 0.32, no: '03', title: '连弦 · 五' },
+      { at: 0.49, no: '04', title: '以弦作圆' },
+      { at: 0.66, no: '05', title: '直角自现' },
+      { at: 0.8, no: '06', title: '九 + 十六 = 二十五' },
+    ];
+
+    const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+    // 缓入缓出：起笔和收笔都有个减速，避免一段线「唰」地跳出来
+    const easeInOut = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const beat = (p: number, from: number, to: number) => easeInOut(clamp01((p - from) / (to - from)));
+
+    // 线长只量一次；圆用周长，保证描线速度一致
+    segs.forEach((seg) => {
+      if (!seg.el) return;
+      seg.len = (seg.el as SVGGeometryElement).getTotalLength();
+      seg.el.style.strokeDasharray = String(seg.len);
+    });
+
+    const circleLen = circle ? 2 * Math.PI * Number(circle.getAttribute('r')) : 0;
+    if (circle) circle.style.strokeDasharray = String(circleLen);
+
+    const angleLen = angle ? (angle as SVGGeometryElement).getTotalLength() : 0;
+    if (angle) {
+      angle.style.strokeDasharray = String(angleLen);
+      angle.style.strokeDashoffset = String(angleLen);
+    }
+
+    const draw = (el: SVGElement | null, len: number, t: number) => {
+      if (el) el.style.strokeDashoffset = String(len * (1 - t));
+    };
+
+    const setOpacity = (el: Element | null, value: number) => {
+      if (el) (el as SVGElement).style.opacity = String(value);
+    };
+
+    let lastBeat = -1;
+
+    const render = (p: number) => {
+      const gu = beat(p, 0, 0.1);
+      const gou = beat(p, 0.16, 0.26);
+      const xian = beat(p, 0.32, 0.43);
+      const arc = beat(p, 0.49, 0.66);
+      const marks = beat(p, 0.66, 0.74);
+      const note = beat(p, 0.8, 0.88);
+
+      draw(segs[0].el, segs[0].len, gu);
+      draw(segs[1].el, segs[1].len, gou);
+      draw(segs[2].el, segs[2].len, xian);
+      draw(circle, circleLen, arc);
+      draw(angle, angleLen, marks);
+
+      setOpacity(dots[0], clamp01(gu * 4));
+      setOpacity(dots[1], clamp01((gu - 0.85) * 6));
+      setOpacity(dots[2], clamp01((gou - 0.85) * 6));
+      setOpacity(dots[3], clamp01(arc * 3) * 0.9);
+
+      labels.forEach((el) => setOpacity(el, marks));
+      setOpacity(labels[3], note);
+
+      // 从空白处起笔，之后保持完整（进度跟滚动走，不再整轮淡出重来）
+      if (figure) figure.style.opacity = String(clamp01(p / 0.02));
+
+      if (fillEl) fillEl.style.width = `${p * 100}%`;
+
+      let index = 0;
+      for (let i = 0; i < BEATS.length; i += 1) {
+        if (p >= BEATS[i].at) index = i;
+      }
+
+      if (index !== lastBeat) {
+        lastBeat = index;
+        if (stepEl) stepEl.textContent = BEATS[index].no;
+        if (titleEl) titleEl.textContent = BEATS[index].title;
+        ticks.forEach((tick, i) => tick.classList.toggle('is-on', i === index));
+      }
+    };
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let dragging = false;
+    let startX = 0;
+    let startProgress = 0;
+
+    if (reduced) {
+      // 只出终图，不自动播放
+      render(0.92);
+    } else {
+      render(0);
+
+      // 首页英雄区没有滚动驱动，改成自动演示：从空白处一段段画完，停一拍再从头来。
+      // 一轮 ≈ 13.2 秒 + 2.8 秒停留，每段线都留出呼吸时间（原来 7.6 秒，切换太急）。
+      const DURATION = 13200;
+      const HOLD = 2800;
+      let elapsed = 0;
+      let last = 0;
+
+      const tick = (now: number) => {
+        requestAnimationFrame(tick);
+        if (!last) last = now;
+        const delta = now - last;
+        last = now;
+        if (dragging || document.hidden) return;
+
+        elapsed += delta;
+        if (elapsed >= DURATION + HOLD) elapsed = 0;
+
+        if (elapsed >= DURATION) {
+          render(1);
+          return;
+        }
+
+        startProgress = clamp01(elapsed / DURATION);
+        render(startProgress);
+      };
+
+      requestAnimationFrame(tick);
+
+      // 拖动：按住左右拖，直接停在任意一拍；松手后从当前位置接着播
+      loop.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0 && event.pointerType === 'mouse') return;
+        dragging = true;
+        startX = event.clientX;
+        loop.classList.add('is-drag');
+        loop.setPointerCapture(event.pointerId);
+      });
+
+      loop.addEventListener('pointermove', (event) => {
+        if (!dragging) return;
+        const width = Math.max(200, loop.getBoundingClientRect().width);
+        startProgress = Math.min(0.999, Math.max(0, startProgress + (event.clientX - startX) / width));
+        startX = event.clientX;
+        render(startProgress);
+      });
+
+      const stopDrag = () => {
+        if (!dragging) return;
+        dragging = false;
+        loop.classList.remove('is-drag');
+        // 把播放进度对齐到松手的位置，避免跳回上一拍
+        elapsed = Math.min(startProgress, 1) * DURATION;
+        last = 0;
+      };
+
+      loop.addEventListener('pointerup', stopDrag);
+      loop.addEventListener('pointercancel', stopDrag);
+    }
+  }
+</script>

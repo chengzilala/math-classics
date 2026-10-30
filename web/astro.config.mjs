@@ -4,4 +4,8 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
   output: 'static',
   devToolbar: { enabled: false },
+  // 主题总览已并入「趣味数学」栏目，旧地址保留跳转，避免外链和搜索引擎 404。
+  redirects: {
+    '/topics': '/fun/',
+  },
 });

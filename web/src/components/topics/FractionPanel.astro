@@ -1,0 +1,53 @@
+---
+// 组合页：分数。FractionBar 负责拖动，这里补上小数、百分数与最简分数。
+import FractionBar from '../lab/FractionBar.astro';
+
+interface Props {
+  numerator?: number;
+  denominator?: number;
+  tone?: 'accent' | 'blue';
+}
+
+const { numerator = 3, denominator = 8, tone = 'accent' } = Astro.props;
+---
+
+<div
+  class="mc-topic-panel"
+  data-fraction-panel
+  data-numerator={numerator}
+  data-denominator={denominator}
+>
+  <FractionBar label="涂色部分" numerator={numerator} denominator={denominator} tone={tone} />
+  <p class="mc-lab-readout" data-out aria-live="polite">拖动色条试试</p>
+</div>
+
+<script>
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+
+  const trim = (value: number) => {
+    const rounded = Math.round(value * 1000) / 1000;
+    return String(rounded);
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-fraction-panel]').forEach((panel) => {
+    const out = panel.querySelector<HTMLElement>('[data-out]');
+    if (!out) return;
+
+    const show = (n: number, d: number) => {
+      const divisor = gcd(n, d) || 1;
+      const simple = `${n / divisor}/${d / divisor}`;
+      const decimal = d === 0 ? 0 : n / d;
+      out.innerHTML = `<strong>${n}/${d}</strong> = <strong>${trim(decimal)}</strong> = <strong>${trim(decimal * 100)}%</strong>；最简写法 <strong>${simple}</strong>。`;
+    };
+
+    panel.addEventListener('mc:fraction', (event) => {
+      const detail = (event as CustomEvent<{ numerator: number; denominator: number }>).detail;
+      show(detail.numerator, detail.denominator);
+    });
+
+    const start = () =>
+      show(Number(panel.dataset.numerator ?? 3), Number(panel.dataset.denominator ?? 8));
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+  });
+</script>

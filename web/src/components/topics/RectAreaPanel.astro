@@ -1,0 +1,37 @@
+---
+// 组合页：长方形面积。用坐标系原语的矩形模式，读数补上面积与周长。
+import CoordPlane from '../lab/CoordPlane.astro';
+
+interface Props {
+  width?: number;
+  height?: number;
+  max?: number;
+}
+
+const { width = 15, height = 16, max = 20 } = Astro.props;
+---
+
+<div class="mc-topic-panel" data-rect-area data-start-x={width} data-start-y={height}>
+  <CoordPlane mode="rect" snap={1} maxX={max} maxY={max} startX={width} startY={height} />
+  <p class="mc-lab-readout" data-out aria-live="polite">拖动顶点试试</p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-rect-area]').forEach((panel) => {
+    const out = panel.querySelector<HTMLElement>('[data-out]');
+    if (!out) return;
+
+    const show = (width: number, height: number) => {
+      out.innerHTML = `广 <strong>${width}</strong> × 从 <strong>${height}</strong> = 面积 <strong>${width * height}</strong> 平方单位；周长 = 2 ×（${width} + ${height}）= <strong>${2 * (width + height)}</strong>。`;
+    };
+
+    panel.addEventListener('mc:point', (event) => {
+      const detail = (event as CustomEvent<{ x: number; y: number }>).detail;
+      show(detail.x, detail.y);
+    });
+
+    const start = () => show(Number(panel.dataset.startX ?? 15), Number(panel.dataset.startY ?? 16));
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+  });
+</script>

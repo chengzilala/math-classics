@@ -1,0 +1,53 @@
+---
+// 基础原语 01：滑块。拖动即改值，向上派发 mc:slider 事件。
+interface Props {
+  label?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  value?: number;
+  unit?: string;
+}
+
+const { label = '数值', min = 0, max = 10, step = 1, value = 5, unit = '' } = Astro.props;
+---
+
+<div class="mc-lab-field" data-slider data-unit={unit}>
+  <div class="mc-lab-field__head">
+    <span class="mc-lab-field__label">{label}</span>
+    <output class="mc-lab-field__value" data-value>{value}{unit}</output>
+  </div>
+  <input
+    class="mc-lab-range"
+    type="range"
+    min={min}
+    max={max}
+    step={step}
+    value={value}
+    aria-label={label}
+    data-range
+  />
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-slider]').forEach((root) => {
+    const range = root.querySelector<HTMLInputElement>('[data-range]');
+    const output = root.querySelector<HTMLElement>('[data-value]');
+
+    if (!range || !output) return;
+
+    const unit = root.dataset.unit ?? '';
+
+    const sync = () => {
+      const value = Number(range.value);
+      output.textContent = `${value}${unit}`;
+      root.dispatchEvent(
+        new CustomEvent('mc:slider', { detail: { value }, bubbles: true }),
+      );
+    };
+
+    range.addEventListener('input', sync);
+    (root as HTMLElement & { mcGetValue?: () => number }).mcGetValue = () =>
+      Number(range.value);
+  });
+</script>

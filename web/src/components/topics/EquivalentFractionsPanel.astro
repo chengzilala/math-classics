@@ -1,0 +1,49 @@
+---
+// 组合页：等值分数。两条分数条各自可拖，读数判断是不是同一个数。
+import FractionBar from '../lab/FractionBar.astro';
+---
+
+<div class="mc-topic-panel" data-equivalent>
+  <div class="mc-lab-demo__grid">
+    <FractionBar label="第一条" numerator={1} denominator={2} />
+    <FractionBar label="第二条" numerator={2} denominator={4} tone="blue" />
+  </div>
+  <p class="mc-lab-readout" data-out aria-live="polite">拖动两条上的色块，让它们相等</p>
+</div>
+
+<script>
+  const trim = (value: number) => String(Math.round(value * 1000) / 1000);
+
+  document.querySelectorAll<HTMLElement>('[data-equivalent]').forEach((panel) => {
+    const out = panel.querySelector<HTMLElement>('[data-out]');
+    const bars = Array.from(panel.querySelectorAll<HTMLElement>('[data-fraction-bar]'));
+    if (!out || bars.length < 2) return;
+
+    const values = bars.map((bar) => ({
+      n: Number(bar.dataset.numerator ?? 1),
+      d: Number(bar.dataset.denominator ?? 2),
+    }));
+
+    const render = () => {
+      const [a, b] = values;
+      const left = a.n / a.d;
+      const right = b.n / b.d;
+      const same = Math.abs(left - right) < 1e-9;
+      out.classList.toggle('is-ok', same);
+      out.innerHTML = same
+        ? `<strong>${a.n}/${a.d} = ${b.n}/${b.d} = ${trim(left)}</strong>：分子分母同时乘或除同一个数，分数不变。`
+        : `<strong>${a.n}/${a.d}</strong> = ${trim(left)}，<strong>${b.n}/${b.d}</strong> = ${trim(right)}，还差一点。`;
+    };
+
+    panel.addEventListener('mc:fraction', (event) => {
+      const detail = (event as CustomEvent<{ numerator: number; denominator: number }>).detail;
+      const source = event.target as HTMLElement;
+      const index = bars.findIndex((bar) => bar.contains(source) || bar === source);
+      if (index < 0) return;
+      values[index] = { n: detail.numerator, d: detail.denominator };
+      render();
+    });
+
+    render();
+  });
+</script>

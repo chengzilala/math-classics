@@ -1,0 +1,463 @@
+/* 实验台 / lab 组件库样式：只用主题变量，不引入外部依赖 */
+
+.mc-lab {
+  padding: clamp(96px, 12vh, 140px) 0 96px;
+}
+
+.mc-lab__head {
+  max-width: 46rem;
+  margin-bottom: clamp(36px, 6vh, 64px);
+}
+
+.mc-lab__head h1 {
+  margin: 0 0 16px;
+  font-family: var(--mc-serif);
+  font-size: clamp(32px, 4.4vw, 56px);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+
+.mc-lab__head p {
+  margin: 0;
+  color: var(--mc-ink-soft);
+  max-width: 40rem;
+}
+
+/* 样张页顶部提示条 */
+.mc-lab-banner {
+  margin: 0 0 clamp(28px, 4vh, 44px);
+  padding: 14px 18px;
+  border-left: 3px solid var(--mc-accent);
+  background: rgb(255 255 255 / 4%);
+  color: var(--mc-ink-soft);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.mc-lab-banner a {
+  color: var(--mc-accent);
+}
+
+.mc-lab-banner code {
+  font-size: 13px;
+}
+
+.mc-lab__head-link {
+  margin-top: 18px !important;
+}
+
+.mc-lab__head-link a {
+  display: inline-block;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--mc-accent);
+  color: var(--mc-accent);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.mc-lab__section {
+  margin-top: clamp(40px, 7vh, 72px);
+}
+
+.mc-lab__section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 0 0 8px;
+  font-family: var(--mc-serif);
+  font-size: clamp(20px, 2.4vw, 27px);
+  letter-spacing: 0.06em;
+}
+
+.mc-lab__section-title span {
+  font-family: var(--mc-sans);
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  color: var(--mc-accent);
+  text-transform: uppercase;
+}
+
+.mc-lab__section-note {
+  margin: 0 0 24px;
+  color: var(--mc-muted);
+  font-size: 14px;
+}
+
+/* ---------- 卡片 ---------- */
+
+.mc-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+  gap: 18px;
+}
+
+.mc-lab-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--mc-line);
+  border-radius: 4px;
+  background: var(--mc-panel);
+}
+
+.mc-lab-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mc-lab-card__head h3 {
+  margin: 0;
+  font-family: var(--mc-serif);
+  font-size: 19px;
+  letter-spacing: 0.05em;
+}
+
+.mc-lab-card__tag {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--mc-muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mc-lab-card__desc {
+  margin: 0;
+  color: var(--mc-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ---------- 通用读数 ---------- */
+
+.mc-lab-readout {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--mc-line-strong);
+  border-radius: 0 3px 3px 0;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--mc-ink-soft);
+  font-size: 13px;
+  line-height: 1.7;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.mc-lab-readout strong {
+  color: var(--mc-accent);
+  font-weight: 600;
+}
+
+.mc-lab-readout.is-ok {
+  border-left-color: var(--mc-ok);
+  color: var(--mc-ok);
+}
+
+.mc-lab-readout.is-ok strong {
+  color: var(--mc-ok);
+}
+
+/* ---------- 画板（坐标系 / 拖拽点 / 数轴 / 量角器共用） ---------- */
+
+.mc-lab-board svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.mc-lab-board svg:focus-visible {
+  outline: 2px solid var(--mc-accent);
+  outline-offset: 2px;
+}
+
+.mc-lab-grid-line {
+  stroke: rgba(236, 230, 214, 0.07);
+  stroke-width: 1;
+}
+
+.mc-lab-axis {
+  stroke: rgba(236, 230, 214, 0.3);
+  stroke-width: 1.2;
+}
+
+.mc-lab-axis-label {
+  fill: var(--mc-muted);
+  font-size: 10px;
+  font-family: var(--mc-sans);
+}
+
+.mc-lab-shape {
+  fill: rgba(217, 178, 95, 0.12);
+  stroke: var(--mc-accent);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.mc-lab-dot {
+  fill: var(--mc-accent);
+  stroke: var(--mc-bg-2);
+  stroke-width: 2;
+  cursor: grab;
+  transition: r 0.15s ease;
+}
+
+.mc-lab-dot.is-dragging {
+  cursor: grabbing;
+}
+
+.mc-lab-target {
+  fill: none;
+  stroke: var(--mc-blue);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 5;
+  opacity: 0.75;
+}
+
+/* ---------- 滑块 ---------- */
+
+.mc-lab-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mc-lab-field__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--mc-muted);
+}
+
+.mc-lab-field__value {
+  font-family: var(--mc-serif);
+  font-size: 20px;
+  color: var(--mc-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-lab-range {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  accent-color: var(--mc-accent);
+  cursor: pointer;
+}
+
+/* ---------- 数轴 ---------- */
+
+.mc-lab-numline svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  cursor: ew-resize;
+}
+
+.mc-lab-numline svg:focus-visible {
+  outline: 2px solid var(--mc-accent);
+  outline-offset: 2px;
+}
+
+.mc-lab-numline__base {
+  stroke: rgba(236, 230, 214, 0.35);
+  stroke-width: 1.4;
+}
+
+.mc-lab-numline__tick {
+  stroke: rgba(236, 230, 214, 0.28);
+  stroke-width: 1;
+}
+
+.mc-lab-numline__tick--major {
+  stroke: rgba(236, 230, 214, 0.55);
+}
+
+.mc-lab-numline__label {
+  fill: var(--mc-muted);
+  font-size: 10px;
+  font-family: var(--mc-sans);
+}
+
+.mc-lab-numline__mark {
+  stroke: var(--mc-accent);
+  stroke-width: 2;
+}
+
+.mc-lab-numline__knob {
+  fill: var(--mc-accent);
+  stroke: var(--mc-bg-2);
+  stroke-width: 2;
+}
+
+.mc-lab-numline__value {
+  fill: var(--mc-accent);
+  font-size: 12px;
+  font-family: var(--mc-sans);
+  font-weight: 600;
+}
+
+/* ---------- 分数条 ---------- */
+
+.mc-lab-frac svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  cursor: ew-resize;
+}
+
+.mc-lab-frac[data-editable='false'] svg {
+  cursor: default;
+}
+
+.mc-lab-frac__part {
+  fill: rgba(236, 230, 214, 0.07);
+  stroke: var(--mc-bg-2);
+  stroke-width: 1.5;
+}
+
+.mc-lab-frac__part.is-on {
+  fill: rgba(217, 178, 95, 0.72);
+}
+
+.mc-lab-frac__part.is-on.is-blue {
+  fill: rgba(106, 168, 255, 0.62);
+}
+
+.mc-lab-frac__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.mc-lab-frac__hint {
+  color: var(--mc-muted);
+  font-size: 12px;
+}
+
+/* ---------- 量角器 ---------- */
+
+.mc-lab-proto svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.mc-lab-proto svg:focus-visible,
+.mc-lab-frac svg:focus-visible {
+  outline: 2px solid var(--mc-accent);
+  outline-offset: 2px;
+}
+
+.mc-lab-proto__arc {
+  fill: rgba(255, 255, 255, 0.02);
+  stroke: rgba(236, 230, 214, 0.3);
+  stroke-width: 1.2;
+}
+
+.mc-lab-proto__tick {
+  stroke: rgba(236, 230, 214, 0.25);
+  stroke-width: 1;
+}
+
+.mc-lab-proto__tick--major {
+  stroke: rgba(236, 230, 214, 0.5);
+}
+
+.mc-lab-proto__label {
+  fill: var(--mc-muted);
+  font-size: 9px;
+  font-family: var(--mc-sans);
+}
+
+.mc-lab-proto__ray {
+  stroke: var(--mc-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.mc-lab-proto__knob {
+  fill: var(--mc-accent);
+  stroke: var(--mc-bg-2);
+  stroke-width: 2;
+}
+
+/* ---------- 组合演示 ---------- */
+
+.mc-lab-demos {
+  display: grid;
+  gap: 18px;
+}
+
+.mc-lab-demo {
+  padding: 22px;
+  border: 1px solid var(--mc-line);
+  border-radius: 4px;
+  background: var(--mc-panel);
+}
+
+.mc-lab-demo h3 {
+  margin: 0 0 6px;
+  font-family: var(--mc-serif);
+  font-size: 19px;
+  letter-spacing: 0.05em;
+}
+
+.mc-lab-demo > p {
+  margin: 0 0 16px;
+  color: var(--mc-muted);
+  font-size: 13px;
+}
+
+.mc-lab-demo__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.mc-lab-demo__stack {
+  display: grid;
+  gap: 12px;
+}
+
+.mc-lab-fracs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 12px;
+}
+
+.mc-lab__foot {
+  margin-top: clamp(40px, 6vh, 64px);
+  padding-top: 20px;
+  border-top: 1px solid var(--mc-line);
+  color: var(--mc-muted);
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mc-lab-dot,
+  .mc-lab-readout {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .mc-lab {
+    padding-top: 92px;
+  }
+
+  .mc-lab-card,
+  .mc-lab-demo {
+    padding: 16px;
+  }
+}

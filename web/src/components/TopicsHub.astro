@@ -1,0 +1,143 @@
+---
+// 趣味数学的总览：搜索 + 六个大类（章节 → 主题数）+ 进度。
+// 原来单独在 /topics/ 有一份同样的页面，和 /fun/ 撞车；现在只留这一处，/topics/ 跳到这里。
+import { getCollection } from 'astro:content';
+import { curriculum } from '../data/curriculum';
+import '../styles/topics.css';
+
+const written = new Set((await getCollection('topics')).map((entry) => entry.data.id));
+
+const sections = curriculum.map((section) => {
+  const topics = section.chapters.flatMap((chapter) => chapter.topics);
+  return {
+    ...section,
+    topicCount: topics.length,
+    done: topics.filter((topic) => written.has(topic.slug)).length,
+  };
+});
+
+const searchIndex = curriculum.flatMap((section) =>
+  section.chapters.flatMap((chapter) =>
+    chapter.topics.map((topic) => ({
+      t: topic.title,
+      h: `/topics/${section.slug}/${topic.slug}/`,
+      s: `${section.title} · ${chapter.title}`,
+      d: written.has(topic.slug) ? 1 : 0,
+    })),
+  ),
+);
+---
+
+<div class="mc-topics mc-topics--embed">
+  <div class="mc-topics__search">
+    <label for="topic-search">搜一个主题</label>
+    <input
+      id="topic-search"
+      type="search"
+      placeholder="例如：分数、面积、一次函数"
+      autocomplete="off"
+      data-topic-search
+    />
+    <ul class="mc-topics__results" data-topic-results hidden></ul>
+  </div>
+
+  <div class="mc-topics__sections">
+    {
+      sections.map((section) => (
+        <section class="mc-section-card" aria-labelledby={`sec-${section.slug}`}>
+          <header class="mc-section-card__head">
+            <div>
+              <h2 id={`sec-${section.slug}`}>
+                <a href={`/topics/${section.slug}/`}>{section.title}</a>
+              </h2>
+              <p>{section.tagline}</p>
+            </div>
+            <div class="mc-section-card__progress" aria-label={`已完成 ${section.done}/${section.topicCount}`}>
+              <span>
+                {section.done}/{section.topicCount}
+              </span>
+              <span class="mc-section-card__bar" aria-hidden="true">
+                <span style={`width:${section.topicCount ? (section.done / section.topicCount) * 100 : 0}%`} />
+              </span>
+            </div>
+          </header>
+          <ul class="mc-section-card__chapters">
+            {section.chapters.map((chapter) => (
+              <li>
+                <span>{chapter.title}</span>
+                <span class="mc-section-card__meta">{chapter.topics.length} 个主题</span>
+              </li>
+            ))}
+          </ul>
+          <a class="mc-section-card__more" href={`/topics/${section.slug}/`}>
+            进入「{section.title}」→
+          </a>
+        </section>
+      ))
+    }
+  </div>
+
+  <p class="mc-topics__foot">
+    交互统一由 <a href="/lab/">六个基础原语</a> 拼装；每个主题的数字都过一遍
+    <code>sympy</code> 审核闸，算不对就构建失败。
+  </p>
+</div>
+
+<script type="application/json" id="topic-index" set:html={JSON.stringify(searchIndex)} />
+
+<script>
+  const input = document.querySelector<HTMLInputElement>('[data-topic-search]');
+  const list = document.querySelector<HTMLUListElement>('[data-topic-results]');
+  const dataEl = document.getElementById('topic-index');
+
+  if (input && list && dataEl) {
+    const topics = JSON.parse(dataEl.textContent || '[]') as {
+      t: string;
+      h: string;
+      s: string;
+      d: number;
+    }[];
+
+    const render = () => {
+      const keyword = input.value.trim();
+      list.innerHTML = '';
+
+      if (!keyword) {
+        list.hidden = true;
+        return;
+      }
+
+      const hits = topics.filter((topic) => topic.t.includes(keyword)).slice(0, 8);
+
+      if (hits.length === 0) {
+        list.hidden = false;
+        list.innerHTML = '<li class="mc-topics__empty">没找到，换个说法试试（如「面积」「分数」）。</li>';
+        return;
+      }
+
+      list.hidden = false;
+      list.innerHTML = hits
+        .map(
+          (topic) =>
+            `<li><a href="${topic.h}"><span>${topic.t}</span><em>${topic.s}${topic.d ? ' · 已写完' : ''}</em></a></li>`,
+        )
+        .join('');
+    };
+
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      const first = list.querySelector('a');
+      if (first) window.location.href = first.getAttribute('href') || '/fun/';
+    });
+  }
+</script>
+
+<style>
+  /* 嵌在「趣味数学」栏目页里：去掉 topics.css 给独立页面留的上下大留白与限宽 */
+  .mc-topics--embed {
+    max-width: none;
+    margin: 0;
+    padding: clamp(24px, 4vw, 40px) 0 0;
+  }
+</style>

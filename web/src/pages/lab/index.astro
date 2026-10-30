@@ -1,0 +1,255 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/lab.css';
+import SliderControl from '../../components/lab/SliderControl.astro';
+import CoordPlane from '../../components/lab/CoordPlane.astro';
+import DragPoint from '../../components/lab/DragPoint.astro';
+import NumberLine from '../../components/lab/NumberLine.astro';
+import FractionBar from '../../components/lab/FractionBar.astro';
+import Protractor from '../../components/lab/Protractor.astro';
+---
+
+<Base
+  title="实验台"
+  description="六个基础交互原语与三个组合演示，验证「原语 + 填参数」这条内容路线。"
+  full
+>
+  <div class="mc-lab">
+    <header class="mc-lab__head">
+      <p class="mc-eyebrow">Lab · 组件库</p>
+      <h1>实验台</h1>
+      <p>
+        这里不摆成品页面，只摆零件：六个能拖、能按键的基础原语，加三个用它们拼出来的演示。
+        新命题凡是能靠这几个原语加参数讲清楚，就不该再写一次性交互。
+      </p>
+      <p>
+        所有数字在构建前都会被 <code>sympy</code> 审核闸复算一遍；这里展示的等式与命题页同源。
+      </p>
+      <p class="mc-lab__head-link">
+        <a href="/lab/proposition/">→ 先看一道用这些原语拼出来的完整命题（盈不足）</a>
+      </p>
+    </header>
+
+    <section class="mc-lab__section" aria-labelledby="lab-parts">
+      <h2 class="mc-lab__section-title" id="lab-parts">六个基础原语 <span>Primitives</span></h2>
+      <p class="mc-lab__section-note">鼠标拖动、触屏滑动、键盘方向键都可用。</p>
+
+      <div class="mc-lab-grid">
+        <article class="mc-lab-card">
+          <div class="mc-lab-card__head">
+            <h3>01 · 坐标系</h3>
+            <span class="mc-lab-card__tag">CoordPlane</span>
+          </div>
+          <p class="mc-lab-card__desc">三种模式：点坐标、直角三角形（勾股）、矩形面积（方田）。</p>
+          <CoordPlane mode="triangle" />
+        </article>
+
+        <article class="mc-lab-card">
+          <div class="mc-lab-card__head">
+            <h3>02 · 滑块</h3>
+            <span class="mc-lab-card__tag">SliderControl</span>
+          </div>
+          <p class="mc-lab-card__desc">最基础的取值控件，改一次值就向上派发一次事件。</p>
+          <SliderControl label="人数" min={1} max={12} step={1} value={1} unit=" 人" />
+        </article>
+
+        <article class="mc-lab-card">
+          <div class="mc-lab-card__head">
+            <h3>03 · 拖拽点</h3>
+            <span class="mc-lab-card__tag">DragPoint</span>
+          </div>
+          <p class="mc-lab-card__desc">把点拖进目标圈：适合做「拖到答案」式小练习。</p>
+          <DragPoint targetX={3} targetY={4} />
+        </article>
+
+        <article class="mc-lab-card">
+          <div class="mc-lab-card__head">
+            <h3>04 · 数轴</h3>
+            <span class="mc-lab-card__tag">NumberLine</span>
+          </div>
+          <p class="mc-lab-card__desc">游标吸附刻度，可被外部程序改值，用来做双线对比。</p>
+          <NumberLine label="数轴" min={-5} max={15} step={1} value={0} />
+        </article>
+
+        <article class="mc-lab-card">
+          <div class="mc-lab-card__head">
+            <h3>05 · 分数条</h3>
+            <span class="mc-lab-card__tag">FractionBar</span>
+          </div>
+          <p class="mc-lab-card__desc">拖动色条改变份数，比例、配分题都能直接用。</p>
+          <FractionBar label="分数" numerator={3} denominator={5} />
+        </article>
+
+        <article class="mc-lab-card">
+          <div class="mc-lab-card__head">
+            <h3>06 · 量角器</h3>
+            <span class="mc-lab-card__tag">Protractor</span>
+          </div>
+          <p class="mc-lab-card__desc">半圆刻度 0°–180°，拖动射线，5° 吸附。</p>
+          <Protractor angle={45} />
+        </article>
+      </div>
+    </section>
+
+    <section class="mc-lab__section" aria-labelledby="lab-demos">
+      <h2 class="mc-lab__section-title" id="lab-demos">三个组合演示 <span>Compositions</span></h2>
+      <p class="mc-lab__section-note">全部由上面的原语拼装，只加几行取值与换算的胶水代码。</p>
+
+      <div class="mc-lab-demos">
+        <article class="mc-lab-demo" data-demo="yingbuzu">
+          <h3>盈不足 · 两条数轴比物价</h3>
+          <p>滑块改人数，两条数轴分别显示两种假设算出的物价；对齐时就是答案。</p>
+          <div class="mc-lab-demo__grid">
+            <div>
+              <SliderControl label="人数" min={1} max={12} step={1} value={1} unit=" 人" />
+              <p class="mc-lab-readout" data-out aria-live="polite">拖动滑块试试</p>
+            </div>
+            <div class="mc-lab-demo__stack">
+              <NumberLine label="人出 8：物价" min={0} max={100} step={1} value={5} unit=" 文" />
+              <NumberLine label="人出 7：物价" min={0} max={100} step={1} value={11} unit=" 文" />
+            </div>
+          </div>
+        </article>
+
+        <article class="mc-lab-demo" data-demo="shuaifen">
+          <h3>衰分 · 五条分数条分鹿</h3>
+          <p>份数固定为 5 : 4 : 3 : 2 : 1，改总只数，看每个人实际拿到多少。</p>
+          <div class="mc-lab-demo__grid">
+            <div>
+              <SliderControl label="鹿的总数" min={5} max={30} step={5} value={5} unit=" 只" />
+              <p class="mc-lab-readout" data-out aria-live="polite">拖动滑块试试</p>
+            </div>
+            <div class="mc-lab-fracs">
+              <FractionBar label="大夫 · 5 份" numerator={5} denominator={15} editable={false} />
+              <FractionBar label="不更 · 4 份" numerator={4} denominator={15} editable={false} />
+              <FractionBar label="簪裹 · 3 份" numerator={3} denominator={15} editable={false} />
+              <FractionBar label="上造 · 2 份" numerator={2} denominator={15} editable={false} />
+              <FractionBar label="公士 · 1 份" numerator={1} denominator={15} editable={false} />
+            </div>
+          </div>
+        </article>
+
+        <article class="mc-lab-demo" data-demo="fangtian">
+          <h3>方田 · 坐标系里量田</h3>
+          <p>拖动右上角改广与从；原语给出平方步，这页只加一步「折合亩数」。</p>
+          <div class="mc-lab-demo__grid">
+            <div>
+              <CoordPlane mode="rect" maxX={20} maxY={20} startX={15} startY={16} snap={0.5} />
+            </div>
+            <div>
+              <p class="mc-lab-readout" data-out aria-live="polite">拖动右上角的点</p>
+              <p class="mc-lab-card__desc" style="margin-top:12px">
+                换算口径：240 平方步 = 1 亩，与卷一方田第一问一致。
+              </p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <p class="mc-lab__foot">
+      这批原语会先服务九章算术线，再考虑<code>几何原本</code>的尺规作图。
+      组件的状态与读数都在本地计算，不联网、不收集信息。
+    </p>
+  </div>
+</Base>
+
+<script>
+  const boot = () => {
+    // 组合 1：盈不足。滑块 → 两条数轴
+    const yingbuzu = document.querySelector<HTMLElement>('[data-demo="yingbuzu"]');
+
+    if (yingbuzu) {
+      const range = yingbuzu.querySelector<HTMLInputElement>('[data-slider] input');
+      const lines = Array.from(yingbuzu.querySelectorAll<HTMLElement>('[data-number-line]'));
+      const out = yingbuzu.querySelector<HTMLElement>('[data-out]');
+
+      if (range && lines.length >= 2 && out) {
+        const sync = () => {
+          const n = Number(range.value);
+          const price8 = 8 * n - 3;
+          const price7 = 7 * n + 4;
+          const gap = Math.abs(price8 - price7);
+
+          (lines[0] as HTMLElement & { mcSetValue?: (value: number) => void }).mcSetValue?.(price8);
+          (lines[1] as HTMLElement & { mcSetValue?: (value: number) => void }).mcSetValue?.(price7);
+
+          out.classList.toggle('is-ok', gap === 0);
+          out.innerHTML =
+            gap === 0
+              ? `两条数轴对齐在 <strong>${price8} 文</strong>：<strong>${n} 人，物价 ${price8} 文</strong>。`
+              : `人出 8 → ${price8} 文；人出 7 → ${price7} 文；还差 <strong>${gap} 文</strong>。`;
+        };
+
+        range.addEventListener('input', sync);
+        sync();
+      }
+    }
+
+    // 组合 2：衰分。总数 → 五条分数条的实际份额
+    const shuaifen = document.querySelector<HTMLElement>('[data-demo="shuaifen"]');
+
+    if (shuaifen) {
+      const range = shuaifen.querySelector<HTMLInputElement>('[data-slider] input');
+      const out = shuaifen.querySelector<HTMLElement>('[data-out]');
+      const shares = [
+        { name: '大夫', parts: 5 },
+        { name: '不更', parts: 4 },
+        { name: '簪裹', parts: 3 },
+        { name: '上造', parts: 2 },
+        { name: '公士', parts: 1 },
+      ];
+
+      if (range && out) {
+        const sync = () => {
+          const total = Number(range.value);
+          out.innerHTML = shares
+            .map(({ name, parts }) => {
+              const value = (total * parts) / 15;
+              const shown = Number.isInteger(value) ? String(value) : value.toFixed(2);
+              return `${name} <strong>${shown}</strong> 只`;
+            })
+            .join(' · ');
+        };
+
+        range.addEventListener('input', sync);
+        sync();
+      }
+    }
+
+    // 组合 3：方田。坐标系面积 → 亩
+    const fangtian = document.querySelector<HTMLElement>('[data-demo="fangtian"]');
+
+    if (fangtian) {
+      const plane = fangtian.querySelector<HTMLElement>('[data-coord-plane]');
+      const out = fangtian.querySelector<HTMLElement>('[data-out]');
+
+      if (plane && out) {
+        const sync = (x: number, y: number) => {
+          const area = x * y;
+          const mu = area / 240;
+          const shown = Number.isInteger(mu) ? String(mu) : mu.toFixed(2);
+          out.classList.toggle('is-ok', mu === 1);
+          out.innerHTML = `面积 <strong>${area}</strong> 平方步，合 <strong>${shown}</strong> 亩`;
+        };
+
+        plane.addEventListener('mc:point', (event) => {
+          const detail = (event as CustomEvent<{ x: number; y: number }>).detail;
+          sync(detail.x, detail.y);
+        });
+
+        const point = (
+          plane as HTMLElement & { mcGetPoint?: () => { x: number; y: number } }
+        ).mcGetPoint?.();
+
+        if (point) sync(point.x, point.y);
+      }
+    }
+  };
+
+  if (document.readyState === 'complete') {
+    boot();
+  } else {
+    window.addEventListener('load', boot, { once: true });
+  }
+</script>

@@ -1,13 +1,14 @@
 {
   "name": "math-classics-web",
-  "version": "0.8.0",
+  "version": "0.15.1",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/check-ledger.mjs && astro build",
+    "build": "node scripts/check-ledger.mjs && node scripts/run-math-gate.mjs && astro build",
     "preview": "astro preview",
-    "check": "node scripts/check-ledger.mjs"
+    "check": "node scripts/check-ledger.mjs",
+    "check:math": "node scripts/run-math-gate.mjs"
   },
   "dependencies": {
     "astro": "^7.4.2",

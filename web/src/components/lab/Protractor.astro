@@ -1,0 +1,169 @@
+---
+// 基础原语 06：量角器。半圆刻度 0°–180°，拖动射线读数。
+interface Props {
+  angle?: number;
+  step?: number;
+  label?: string;
+}
+
+const { angle = 45, step = 5, label = '角度' } = Astro.props;
+
+const CX = 160;
+const CY = 170;
+const R = 126;
+const rad = (angle * Math.PI) / 180;
+const END_X = CX + R * Math.cos(rad);
+const END_Y = CY - R * Math.sin(rad);
+---
+
+<div class="mc-lab-proto" data-protractor data-angle={angle} data-step={step}>
+  <div class="mc-lab-field__head">
+    <span class="mc-lab-field__label">{label}</span>
+    <output class="mc-lab-field__value" data-value>{angle}°</output>
+  </div>
+
+  <svg viewBox="0 0 320 200" tabindex="0" role="slider" aria-label={label} aria-valuemin="0" aria-valuemax="180" aria-valuenow={angle} data-svg>
+    <path class="mc-lab-proto__arc" d={`M ${CX - R} ${CY} A ${R} ${R} 0 0 1 ${CX + R} ${CY}`}></path>
+    <g data-ticks></g>
+    <line class="mc-lab-proto__ray" x1={CX} y1={CY} x2={END_X} y2={END_Y} data-ray></line>
+    <circle class="mc-lab-proto__knob" r="7" cx={END_X} cy={END_Y} data-knob></circle>
+    <text class="mc-lab-proto__label" x={CX} y="196" text-anchor="middle">拖动射线，或按 ← →</text>
+  </svg>
+
+  <p class="mc-lab-readout" data-readout aria-live="polite">∠ <strong>{angle}°</strong></p>
+</div>
+
+<script>
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const make = (tag: string, attrs: Record<string, string | number> = {}) => {
+    const node = document.createElementNS(NS, tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+    return node;
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-protractor]').forEach((root) => {
+    const svg = root.querySelector<SVGSVGElement>('[data-svg]');
+    const tickLayer = root.querySelector<SVGGElement>('[data-ticks]');
+    const ray = root.querySelector<SVGLineElement>('[data-ray]');
+    const knob = root.querySelector<SVGCircleElement>('[data-knob]');
+    const output = root.querySelector<HTMLElement>('[data-value]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+
+    if (!svg || !tickLayer || !ray || !knob || !output || !readout) return;
+
+    const CX = 160;
+    const CY = 170;
+    const R = 126;
+    const step = Number(root.dataset.step ?? 5) || 5;
+
+    const clamp = (value: number, min: number, max: number) =>
+      Math.min(max, Math.max(min, value));
+
+    const toRad = (degrees: number) => (degrees * Math.PI) / 180;
+
+    // 刻度：每 5° 一条，30° 的倍数加长并标数
+    for (let degrees = 0; degrees <= 180; degrees += 5) {
+      const major = degrees % 30 === 0;
+      const length = major ? 15 : 7;
+      const inner = R - length;
+      const startX = CX + inner * Math.cos(toRad(degrees));
+      const startY = CY - inner * Math.sin(toRad(degrees));
+      const endX = CX + R * Math.cos(toRad(degrees));
+      const endY = CY - R * Math.sin(toRad(degrees));
+
+      tickLayer.appendChild(
+        make('line', {
+          x1: startX,
+          y1: startY,
+          x2: endX,
+          y2: endY,
+          class: major ? 'mc-lab-proto__tick mc-lab-proto__tick--major' : 'mc-lab-proto__tick',
+        }),
+      );
+
+      if (major) {
+        const labelR = R - 30;
+        const labelX = CX + labelR * Math.cos(toRad(degrees));
+        const labelY = CY - labelR * Math.sin(toRad(degrees)) + 3;
+        tickLayer.appendChild(
+          make('text', {
+            x: labelX,
+            y: labelY,
+            'text-anchor': 'middle',
+            class: 'mc-lab-proto__label',
+          }),
+        ).textContent = String(degrees);
+      }
+    }
+
+    let current = clamp(Number(root.dataset.angle ?? 45), 0, 180);
+
+    const render = (emit = false) => {
+      const endX = CX + R * Math.cos(toRad(current));
+      const endY = CY - R * Math.sin(toRad(current));
+
+      ray.setAttribute('x2', String(endX));
+      ray.setAttribute('y2', String(endY));
+      knob.setAttribute('cx', String(endX));
+      knob.setAttribute('cy', String(endY));
+
+      output.textContent = `${current}°`;
+      const kind = current === 90 ? '直角' : current < 90 ? '锐角' : '钝角';
+      readout.innerHTML = `∠ <strong>${current}°</strong> · ${kind}`;
+
+      svg.setAttribute('aria-valuenow', String(current));
+      svg.setAttribute('aria-valuetext', `${current} 度`);
+
+      if (emit) {
+        root.dispatchEvent(
+          new CustomEvent('mc:angle', { detail: { angle: current }, bubbles: true }),
+        );
+      }
+    };
+
+    const setAngle = (next: number, emit = false) => {
+      current = clamp(Math.round(next / step) * step, 0, 180);
+      render(emit);
+    };
+
+    const angleAt = (clientX: number, clientY: number) => {
+      const rect = svg.getBoundingClientRect();
+      const px = ((clientX - rect.left) / rect.width) * 320;
+      const py = ((clientY - rect.top) / rect.height) * 200;
+      return (Math.atan2(CY - py, px - CX) * 180) / Math.PI;
+    };
+
+    let dragging = false;
+
+    svg.addEventListener('pointerdown', (event) => {
+      dragging = true;
+      svg.setPointerCapture(event.pointerId);
+      svg.focus();
+      setAngle(angleAt(event.clientX, event.clientY), true);
+      event.preventDefault();
+    });
+
+    svg.addEventListener('pointermove', (event) => {
+      if (dragging) setAngle(angleAt(event.clientX, event.clientY), true);
+    });
+
+    const stop = () => {
+      dragging = false;
+    };
+
+    svg.addEventListener('pointerup', stop);
+    svg.addEventListener('pointercancel', stop);
+
+    svg.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') setAngle(current - step, true);
+      else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') setAngle(current + step, true);
+      else if (event.key === 'Home') setAngle(0, true);
+      else if (event.key === 'End') setAngle(180, true);
+      else return;
+      event.preventDefault();
+    });
+
+    render();
+  });
+</script>

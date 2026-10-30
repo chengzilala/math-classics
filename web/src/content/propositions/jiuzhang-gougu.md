@@ -11,7 +11,7 @@ related:
 source: 维基文库《九章算术》卷九（公有领域影印/点校底本）
 source_license: 公有领域
 original: |
-  今有句三尺，股四尺，問為弦幾何？
+  今有句三尺，股四尺，问为弦几何？
   答曰：五尺。
 original_note: 此处只录题干与答语。「句」即「勾」，是短的直角边；「股」是长的直角边；「弦」是斜边。
 steps:
@@ -54,6 +54,13 @@ exercises:
     answer: 1
     hint: 6 和 8 都是 3 和 4 的两倍，弦也是 5 的两倍。
     note: 6² + 8² = 36 + 64 = 100，√100 = 10 尺。边长同比例放大，形状不变。
+checks:
+  - label: 勾三股四的弦
+    value: "sqrt(3**2 + 4**2)"
+    expect: "5"
+  - label: 勾六股八的弦
+    value: "sqrt(6**2 + 8**2)"
+    expect: "10"
 proofreader: 待定（发布前须外部审校）
 updated: "2026-10-26"
 order: 4

@@ -1,0 +1,80 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import '../../styles/topics.css';
+import { curriculum } from '../../data/curriculum';
+
+export async function getStaticPaths() {
+  return curriculum.map((section) => ({
+    params: { section: section.slug },
+    props: { section },
+  }));
+}
+
+const { section } = Astro.props;
+const written = new Set((await getCollection('topics')).map((entry) => entry.data.id));
+
+const topicCount = section.chapters.reduce((sum, chapter) => sum + chapter.topics.length, 0);
+const doneCount = section.chapters.reduce(
+  (sum, chapter) => sum + chapter.topics.filter((topic) => written.has(topic.slug)).length,
+  0,
+);
+
+const index = curriculum.findIndex((item) => item.slug === section.slug);
+const prev = index > 0 ? curriculum[index - 1] : null;
+const next = index < curriculum.length - 1 ? curriculum[index + 1] : null;
+---
+
+<Base title={`${section.title} · 全部主题`} description={section.tagline} full>
+  <article class="mc-section-page">
+    <nav class="mc-topic__crumbs" aria-label="面包屑">
+      <a href="/fun/">趣味数学</a>
+      <span aria-hidden="true">/</span>
+      <span>{section.title}</span>
+    </nav>
+
+    <header class="mc-topic__head">
+      <p class="mc-kicker">
+        {section.chapters.length} 章 · {topicCount} 个主题 · 已完成 {doneCount}
+      </p>
+      <h1>{section.title}</h1>
+      <p class="mc-lead">{section.tagline}</p>
+    </header>
+
+    <div class="mc-section-page__body">
+      {
+        section.chapters.map((chapter) => {
+          const chapterDone = chapter.topics.filter((topic) => written.has(topic.slug)).length;
+          return (
+            <section class="mc-chapter" aria-labelledby={`ch-${chapter.slug}`}>
+              <header class="mc-chapter__head">
+                <h2 id={`ch-${chapter.slug}`}>{chapter.title}</h2>
+                <span class="mc-chapter__count">
+                  {chapterDone}/{chapter.topics.length}
+                </span>
+              </header>
+              <ul class="mc-chapter__list">
+                {chapter.topics.map((topic) => (
+                  <li>
+                    <a
+                      href={`/topics/${section.slug}/${topic.slug}/`}
+                      class:list={['mc-chapter__link', { 'is-done': written.has(topic.slug) }]}
+                    >
+                      <span class="mc-chapter__dot" aria-hidden="true" />
+                      {topic.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })
+      }
+    </div>
+
+    <nav class="mc-topic__pager" aria-label="分类导航">
+      {prev ? <a href={`/topics/${prev.slug}/`}>← {prev.title}</a> : <span />}
+      {next ? <a href={`/topics/${next.slug}/`}>{next.title} →</a> : <span />}
+    </nav>
+  </article>
+</Base>

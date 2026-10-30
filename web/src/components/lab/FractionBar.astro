@@ -1,0 +1,164 @@
+---
+// 基础原语 05：分数条。拖动或点加减，改变涂色份数。
+interface Props {
+  label?: string;
+  numerator?: number;
+  denominator?: number;
+  editable?: boolean;
+  tone?: 'accent' | 'blue';
+}
+
+const {
+  label = '分数',
+  numerator = 3,
+  denominator = 5,
+  editable = true,
+  tone = 'accent',
+} = Astro.props;
+
+const BAR_X = 8;
+const BAR_W = 284;
+const BAR_Y = 14;
+const BAR_H = 48;
+const segW = BAR_W / denominator;
+---
+
+<div
+  class="mc-lab-frac"
+  data-fraction-bar
+  data-numerator={numerator}
+  data-denominator={denominator}
+  data-editable={editable ? 'true' : 'false'}
+>
+  <div class="mc-lab-field__head">
+    <span class="mc-lab-field__label">{label}</span>
+    <output class="mc-lab-field__value" data-value>{numerator}/{denominator}</output>
+  </div>
+
+  <svg viewBox="0 0 300 76" role="img" aria-label={`${label}：${numerator}/${denominator}`} data-svg tabindex={editable ? 0 : -1}>
+    {
+      Array.from({ length: denominator }).map((_, index) => (
+        <rect
+          x={BAR_X + index * segW + 1}
+          y={BAR_Y}
+          width={Math.max(0, segW - 2)}
+          height={BAR_H}
+          rx="2"
+          class:list={[
+            'mc-lab-frac__part',
+            { 'is-on': index < numerator, 'is-blue': tone === 'blue' },
+          ]}
+          data-part
+        />
+      ))
+    }
+  </svg>
+
+  {
+    editable && (
+      <div class="mc-lab-frac__actions">
+        <button type="button" class="mc-btn" data-dec aria-label="减少一份">
+          −
+        </button>
+        <button type="button" class="mc-btn" data-inc aria-label="增加一份">
+          +
+        </button>
+        <span class="mc-lab-frac__hint">拖动色条或点按钮</span>
+      </div>
+    )
+  }
+
+  <p class="mc-lab-readout" data-readout aria-live="polite">
+    {numerator} / {denominator}
+  </p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-fraction-bar]').forEach((root) => {
+    const svg = root.querySelector<SVGSVGElement>('[data-svg]');
+    const parts = Array.from(root.querySelectorAll<SVGRectElement>('[data-part]'));
+    const output = root.querySelector<HTMLElement>('[data-value]');
+    const readout = root.querySelector<HTMLElement>('[data-readout]');
+    const decButton = root.querySelector<HTMLButtonElement>('[data-dec]');
+    const incButton = root.querySelector<HTMLButtonElement>('[data-inc]');
+
+    if (!svg || !parts.length || !output || !readout) return;
+
+    const denominator = Number(root.dataset.denominator ?? parts.length) || parts.length;
+    const editable = root.dataset.editable !== 'false';
+    let numerator = Math.min(denominator, Math.max(0, Number(root.dataset.numerator ?? 0)));
+
+    const BAR_X = 8;
+    const BAR_W = 284;
+    const SEG_W = BAR_W / denominator;
+
+    const render = (emit = false) => {
+      parts.forEach((part, index) => {
+        part.classList.toggle('is-on', index < numerator);
+      });
+
+      output.textContent = `${numerator}/${denominator}`;
+      readout.innerHTML = `<strong>${numerator}/${denominator}</strong> · 涂了 ${numerator} 份，共 ${denominator} 份`;
+
+      if (emit) {
+        root.dispatchEvent(
+          new CustomEvent('mc:fraction', {
+            detail: { numerator, denominator, value: numerator / denominator },
+            bubbles: true,
+          }),
+        );
+      }
+    };
+
+    const setNumerator = (next: number, emit = false) => {
+      numerator = Math.min(denominator, Math.max(0, Math.round(next)));
+      render(emit);
+    };
+
+    if (editable) {
+      let dragging = false;
+
+      const numeratorAt = (clientX: number) => {
+        const rect = svg.getBoundingClientRect();
+        const px = ((clientX - rect.left) / rect.width) * 300;
+        return Math.ceil((px - BAR_X) / SEG_W);
+      };
+
+      svg.addEventListener('pointerdown', (event) => {
+        dragging = true;
+        svg.setPointerCapture(event.pointerId);
+        svg.focus();
+        setNumerator(numeratorAt(event.clientX), true);
+        event.preventDefault();
+      });
+
+      svg.addEventListener('pointermove', (event) => {
+        if (dragging) setNumerator(numeratorAt(event.clientX), true);
+      });
+
+      const stop = () => {
+        dragging = false;
+      };
+
+      svg.addEventListener('pointerup', stop);
+      svg.addEventListener('pointercancel', stop);
+
+      svg.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') setNumerator(numerator - 1, true);
+        else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') setNumerator(numerator + 1, true);
+        else if (event.key === 'Home') setNumerator(0, true);
+        else if (event.key === 'End') setNumerator(denominator, true);
+        else return;
+        event.preventDefault();
+      });
+
+      decButton?.addEventListener('click', () => setNumerator(numerator - 1, true));
+      incButton?.addEventListener('click', () => setNumerator(numerator + 1, true));
+    }
+
+    (root as HTMLElement & { mcGetFraction?: () => { numerator: number; denominator: number } }).mcGetFraction =
+      () => ({ numerator, denominator });
+
+    render();
+  });
+</script>

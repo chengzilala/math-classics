@@ -1,0 +1,200 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Exercises from '../../components/Exercises.astro';
+import SliderControl from '../../components/lab/SliderControl.astro';
+import NumberLine from '../../components/lab/NumberLine.astro';
+import '../../styles/lab.css';
+import { site } from '../../site';
+
+const entries = await getCollection('propositions');
+const entry = entries.find((item) => item.data.id === 'jiuzhang-yingbuzu');
+
+if (!entry) {
+  throw new Error('缺少 jiuzhang-yingbuzu 内容，样张无法生成');
+}
+
+const p = entry.data;
+
+const toc = [
+  { id: 'original', label: '原文' },
+  { id: 'plain', label: '白话' },
+  { id: 'hands-on', label: '动手' },
+  { id: 'practice', label: '练习' },
+  { id: 'source', label: '出处' },
+];
+---
+
+<Base
+  title={`样张 · ${p.title}（原语拼装版）`}
+  description={`用 6 个基础原语拼出的完整命题样张：${p.summary}`}
+  full
+>
+  <article class="mc-article mc-article--full">
+    <p class="mc-lab-banner">
+      这是 <a href="/lab/">实验台</a> 的样张：下面这道题的全部交互只用 <strong>滑块 + 数轴</strong> 两个原语拼装，
+      内容直接取自 <code>content/propositions/jiuzhang-yingbuzu.md</code>，没有另写一次性代码。
+    </p>
+
+    <header class="mc-proposition__head">
+      <div class="mc-proposition__meta">
+        <p class="mc-kicker">
+          {p.line} · {p.chapter}
+        </p>
+        <h1>{p.title}</h1>
+      </div>
+      <p class="mc-lead">{p.summary}</p>
+    </header>
+
+    <nav class="mc-toc-mobile" aria-label="本页目录">
+      <details>
+        <summary>本页目录</summary>
+        <ul>
+          {toc.map((item) => <li><a href={`#${item.id}`}>{item.label}</a></li>)}
+        </ul>
+      </details>
+    </nav>
+
+    <div class="mc-layout">
+      <div class="mc-sections">
+        <section id="original" class="mc-section">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">ORIGINAL</p>
+            <h2>原文</h2>
+          </header>
+          <pre class="mc-original">{p.original}</pre>
+          {p.original_note && <p class="mc-original__note">{p.original_note}</p>}
+        </section>
+
+        <section id="plain" class="mc-section">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">PLAIN · 白话</p>
+            <h2>白话三步</h2>
+          </header>
+          <ol class="mc-steps">
+            {
+              p.steps.map((step, i) => (
+                <li>
+                  <span class="mc-steps__no">{i + 1}</span>
+                  <div>
+                    <p>{step.text}</p>
+                    {step.analogy && <p class="mc-steps__analogy">{step.analogy}</p>}
+                  </div>
+                </li>
+              ))
+            }
+          </ol>
+        </section>
+
+        <section id="hands-on" class="mc-section">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">HANDS-ON · 动手</p>
+            <h2>动手试一试</h2>
+          </header>
+          <p>拖滑块改人数，看两条数轴上的物价怎么靠近；对齐的那一刻，就是古人给出的答案。</p>
+
+          <div class="mc-lab-demo" data-demo="yingbuzu" style="margin-top:18px">
+            <div class="mc-lab-demo__grid">
+              <div>
+                <SliderControl label="人数" min={1} max={12} step={1} value={1} unit=" 人" />
+                <p class="mc-lab-readout" data-out aria-live="polite">拖动滑块试试</p>
+              </div>
+              <div class="mc-lab-demo__stack">
+                <NumberLine label="人出 8：物价" min={0} max={100} step={1} value={5} unit=" 文" />
+                <NumberLine label="人出 7：物价" min={0} max={100} step={1} value={11} unit=" 文" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="practice" class="mc-section">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">PRACTICE · 练习</p>
+            <h2>小练习</h2>
+          </header>
+          <Exercises exercises={p.exercises} propositionId={`lab-${p.id}`} />
+        </section>
+
+        <section id="source" class="mc-section mc-source">
+          <header class="mc-section__head">
+            <p class="mc-eyebrow">SOURCE · 出处</p>
+            <h2>出处与勘误</h2>
+          </header>
+          <dl>
+            <div>
+              <dt>书名</dt>
+              <dd>{p.line}</dd>
+            </div>
+            <div>
+              <dt>卷 / 题号</dt>
+              <dd>{p.chapter}</dd>
+            </div>
+            <div>
+              <dt>底本</dt>
+              <dd>{p.source}</dd>
+            </div>
+            <div>
+              <dt>许可</dt>
+              <dd>{p.source_license}</dd>
+            </div>
+            <div>
+              <dt>校对人</dt>
+              <dd>{p.proofreader}</dd>
+            </div>
+            <div>
+              <dt>最后更新</dt>
+              <dd>{p.updated}</dd>
+            </div>
+          </dl>
+          <p class="mc-source__errata">
+            发现错漏？<a href={site.errataHref}>{site.errataLabel}</a>。原文以底本为准，白话与解析会随勘误更新。
+          </p>
+        </section>
+      </div>
+
+      <aside class="mc-toc" aria-label="本页目录">
+        <ul>
+          {toc.map((item) => <li><a href={`#${item.id}`}>{item.label}</a></li>)}
+        </ul>
+      </aside>
+    </div>
+  </article>
+</Base>
+
+<script>
+  const boot = () => {
+    const demo = document.querySelector<HTMLElement>('[data-demo="yingbuzu"]');
+    if (!demo) return;
+
+    const range = demo.querySelector<HTMLInputElement>('[data-slider] input');
+    const lines = Array.from(demo.querySelectorAll<HTMLElement>('[data-number-line]'));
+    const out = demo.querySelector<HTMLElement>('[data-out]');
+
+    if (!range || lines.length < 2 || !out) return;
+
+    const sync = () => {
+      const n = Number(range.value);
+      const price8 = 8 * n - 3;
+      const price7 = 7 * n + 4;
+      const gap = Math.abs(price8 - price7);
+
+      (lines[0] as HTMLElement & { mcSetValue?: (value: number) => void }).mcSetValue?.(price8);
+      (lines[1] as HTMLElement & { mcSetValue?: (value: number) => void }).mcSetValue?.(price7);
+
+      out.classList.toggle('is-ok', gap === 0);
+      out.innerHTML =
+        gap === 0
+          ? `两条数轴对齐在 <strong>${price8} 文</strong>：<strong>${n} 人，物价 ${price8} 文</strong>。`
+          : `人出 8 → ${price8} 文；人出 7 → ${price7} 文；还差 <strong>${gap} 文</strong>。`;
+    };
+
+    range.addEventListener('input', sync);
+    sync();
+  };
+
+  if (document.readyState === 'complete') {
+    boot();
+  } else {
+    window.addEventListener('load', boot, { once: true });
+  }
+</script>

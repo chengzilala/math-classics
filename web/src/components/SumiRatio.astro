@@ -1,6 +1,6 @@
 ---
-// 粟米的交互：粟与糲米按 50 : 30（即 5 : 3）同比例换算。
-// 拖动粟的升数，斜线上的点跟着走，横竖虚线把粟和糲米对齐到坐标轴。
+// 粟米的交互：粟与粝米按 50 : 30（即 5 : 3）同比例换算。
+// 拖动粟的升数，斜线上的点跟着走，横竖虚线把粟和粝米对齐到坐标轴。
 import '../styles/jsxgraph.css';
 ---
 
@@ -8,7 +8,7 @@ import '../styles/jsxgraph.css';
   <div class="mc-board" data-board></div>
 
   <div class="mc-legend">
-    <span class="mc-legend__item">粟 50 份 → 糲米 30 份</span>
+    <span class="mc-legend__item">粟 50 份 → 粝米 30 份</span>
     <span class="mc-legend__item mc-legend__item--blue">约分后 5 : 3</span>
   </div>
 
@@ -19,7 +19,7 @@ import '../styles/jsxgraph.css';
   </div>
 
   <p class="mc-readout" data-readout aria-live="polite">
-    拖动滑块改变粟的升数，看糲米按比例跟着变。
+    拖动滑块改变粟的升数，看粝米按比例跟着变。
   </p>
 </div>
 
@@ -66,7 +66,7 @@ import '../styles/jsxgraph.css';
           },
         });
 
-        // 糲米 = 粟 × 30 ÷ 50，从原点出发的一条斜线
+        // 粝米 = 粟 × 30 ÷ 50，从原点出发的一条斜线
         board.create('line', [[0, 0], [25, 15]], {
           straightFirst: false,
           straightLast: false,
@@ -118,7 +118,7 @@ import '../styles/jsxgraph.css';
           fixed: true,
           highlight: false,
         });
-        board.create('text', [1.2, 16.4, '糲米（升）'], {
+        board.create('text', [1.2, 16.4, '粝米（升）'], {
           fontSize: 12,
           strokeColor: '#8d95a9',
           anchorX: 'left',
@@ -138,10 +138,10 @@ import '../styles/jsxgraph.css';
           markerText.setPosition(JXG.COORDS_BY_USER, [s + 0.8, rice + 0.8]);
 
           if (exact) {
-            readout.innerHTML = `粟 10 升 × 30 ÷ 50 = <strong>糲米 6 升</strong>——这就是《九章》粟米第一问的答案。`;
+            readout.innerHTML = `粟 10 升 × 30 ÷ 50 = <strong>粝米 6 升</strong>——这就是《九章》粟米第一问的答案。`;
           } else {
             readout.innerHTML =
-              `粟 ${s} 升 × 30 ÷ 50 = <strong>糲米 ${rice} 升</strong>。比例不变，粟翻倍，米也翻倍。`;
+              `粟 ${s} 升 × 30 ÷ 50 = <strong>粝米 ${rice} 升</strong>。比例不变，粟翻倍，米也翻倍。`;
           }
 
           board.update();

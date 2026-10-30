@@ -1,5 +1,7 @@
 # 依赖
 node_modules/
+.venv/
+web/.venv/
 
 # Astro 生成物
 web/.astro/

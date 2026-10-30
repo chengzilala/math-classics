@@ -1,0 +1,42 @@
+---
+// 组合页：百分比。用数轴原语取 0–100 的整数，再补上分数与小数写法。
+import NumberLine from '../lab/NumberLine.astro';
+
+interface Props {
+  value?: number;
+}
+
+const { value = 45 } = Astro.props;
+---
+
+<div class="mc-topic-panel" data-percent-panel data-value={value}>
+  <NumberLine label="百分比" min={0} max={100} step={1} value={value} unit="%" />
+  <p class="mc-lab-readout" data-out aria-live="polite">拖动游标试试</p>
+</div>
+
+<script>
+  const trim = (value: number) => {
+    const rounded = Math.round(value * 1000) / 1000;
+    return String(rounded);
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-percent-panel]').forEach((panel) => {
+    const out = panel.querySelector<HTMLElement>('[data-out]');
+    const line = panel.querySelector<HTMLElement>('[data-number-line]');
+    if (!out || !line) return;
+
+    const show = (percent: number) => {
+      const decimal = percent / 100;
+      out.innerHTML = `<strong>${percent}%</strong> = <strong>${percent}/100</strong> = <strong>${trim(decimal)}</strong>；也就是一百份里占 ${percent} 份。`;
+    };
+
+    panel.addEventListener('mc:line', (event) => {
+      const detail = (event as CustomEvent<{ value: number }>).detail;
+      show(detail.value);
+    });
+
+    const start = () => show(Number(line.dataset.value ?? panel.dataset.value ?? 45));
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+  });
+</script>

@@ -1,0 +1,38 @@
+---
+// 组合页：三角形面积。用坐标系原语的直角三角形模式，读数补上「底 × 高 ÷ 2」。
+import CoordPlane from '../lab/CoordPlane.astro';
+
+interface Props {
+  base?: number;
+  height?: number;
+  max?: number;
+}
+
+const { base = 6, height = 4, max = 12 } = Astro.props;
+---
+
+<div class="mc-topic-panel" data-triangle-area data-start-x={base} data-start-y={height}>
+  <CoordPlane mode="triangle" snap={1} maxX={max} maxY={max} startX={base} startY={height} />
+  <p class="mc-lab-readout" data-out aria-live="polite">拖动直角顶点试试</p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-triangle-area]').forEach((panel) => {
+    const out = panel.querySelector<HTMLElement>('[data-out]');
+    if (!out) return;
+
+    const show = (base: number, height: number) => {
+      const area = (base * height) / 2;
+      out.innerHTML = `底 <strong>${base}</strong> × 高 <strong>${height}</strong> ÷ 2 = 面积 <strong>${area}</strong> 平方单位（正好是外接长方形 ${base} × ${height} 的一半）。`;
+    };
+
+    panel.addEventListener('mc:point', (event) => {
+      const detail = (event as CustomEvent<{ x: number; y: number }>).detail;
+      show(detail.x, detail.y);
+    });
+
+    const start = () => show(Number(panel.dataset.startX ?? 6), Number(panel.dataset.startY ?? 4));
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+  });
+</script>

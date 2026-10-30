@@ -1,0 +1,277 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import TopicsHub from '../../components/TopicsHub.astro';
+import { lines } from '../../site';
+import { curriculum } from '../../data/curriculum';
+
+export async function getStaticPaths() {
+  return lines.map((line, index) => ({
+    params: { line: line.slug },
+    props: { line, next: lines[(index + 1) % lines.length] },
+  }));
+}
+
+const { line, next } = Astro.props;
+const directions = 'topics' in line ? line.topics : [];
+
+const entries = (await getCollection('propositions'))
+  .filter((entry) => entry.data.line === line.name)
+  .sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99));
+
+// 趣味数学没有古算题，栏目按课程体系的六个大类走，正文在 /topics/ 里。
+const written = new Set((await getCollection('topics')).map((entry) => entry.data.id));
+const sections =
+  line.slug === 'fun'
+    ? curriculum.map((section) => {
+        const topics = section.chapters.flatMap((chapter) => chapter.topics);
+        return {
+          ...section,
+          topicCount: topics.length,
+          done: topics.filter((topic) => written.has(topic.slug)).length,
+        };
+      })
+    : [];
+
+const topicCount = sections.reduce((sum, section) => sum + section.topicCount, 0);
+const writtenCount = sections.reduce((sum, section) => sum + section.done, 0);
+
+const count = entries.length + topicCount;
+const isSoon = count === 0;
+const meta = isSoon
+  ? `筹备中 · 首批 ${directions.length} 个方向`
+  : sections.length > 0
+    ? `共 ${topicCount} 个主题 · 已写完 ${writtenCount} 个`
+    : `共 ${entries.length} 题 · 每题 3 分钟`;
+const pageTitle =
+  sections.length > 0 ? `${line.name} · 一页讲清一个概念` : `《${line.name}》白话图解`;
+const pageDescription = isSoon
+  ? `${line.intro}首批方向：${directions.join('、')}。`
+  : sections.length > 0
+    ? `${line.summary}${sections.length} 个大类、${topicCount} 个主题，已写完 ${writtenCount} 个。`
+    : `${line.summary}共 ${entries.length} 题，每题三分钟，原文对照、可拖动作图。`;
+
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<Base title={pageTitle} description={pageDescription}>
+  <div class="mc-line-page">
+    <header class="mc-line-hero">
+      <p class="mc-kicker">{line.latin} · {line.name}</p>
+      <h1>{line.name}</h1>
+      <p class="mc-lead">{line.summary}</p>
+      <p class="mc-line-hero__count">{meta}</p>
+    </header>
+
+    {
+      sections.length > 0 ? (
+        <TopicsHub />
+      ) : entries.length > 0 ? (
+        <ul
+          class:list={[
+            'mc-cards',
+            'mc-line-cards',
+            { 'mc-line-cards--single': entries.length === 1 },
+          ]}
+        >
+          {entries.map(({ data }, index) => (
+            <li>
+              <a class="mc-card" href={`/propositions/${data.id}/`}>
+                <span class="mc-card__no" aria-hidden="true">
+                  {pad(index + 1)}
+                </span>
+                <span class="mc-card__line">{data.chapter}</span>
+                <span class="mc-card__title">{data.title}</span>
+                <span class="mc-line-card__summary">{data.summary}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <section class="mc-line-soon-panel" aria-labelledby="soon-title">
+          <p class="mc-eyebrow">COMING SOON · 筹备中</p>
+          <h2 id="soon-title">这条线还在备课</h2>
+          <p class="mc-line-soon-panel__lead">{line.intro}</p>
+          <ul class="mc-line-topics">
+            {directions.map((topic, index) => (
+              <li>
+                <span>{pad(index + 1)}</span>
+                <b>{topic}</b>
+                <em>筹备中</em>
+              </li>
+            ))}
+          </ul>
+          <p class="mc-line-soon-panel__note">
+            先看已上线的两条线：
+            <a href="/jiuzhang/">九章算术 →</a>
+            <a href="/sunzi/">孙子算经 →</a>
+          </p>
+        </section>
+      )
+    }
+
+    <nav class="mc-line-nav" aria-label="内容线导航">
+      <a href="/#modules">← 全部栏目</a>
+      {next && <a href={`/${next.slug}/`}>下一条：{next.name} →</a>}
+    </nav>
+  </div>
+</Base>
+
+<style>
+  .mc-line-page {
+    padding: clamp(112px, 16vh, 160px) 0 clamp(56px, 9vh, 104px);
+  }
+
+  .mc-line-hero {
+    max-width: 52rem;
+    padding-bottom: clamp(24px, 4vw, 40px);
+    border-bottom: 1px solid var(--mc-line);
+  }
+
+  .mc-line-hero h1 {
+    margin: 0.7rem 0 0;
+    font-family: var(--mc-serif);
+    font-size: clamp(44px, 7vw, 88px);
+    line-height: 1.05;
+    letter-spacing: 0.08em;
+    padding-left: 0.08em;
+  }
+
+  .mc-line-hero .mc-lead {
+    margin-top: 18px;
+    max-width: 34rem;
+  }
+
+  .mc-line-hero__count {
+    margin: 20px 0 0;
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    color: var(--mc-muted);
+  }
+
+  .mc-line-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: clamp(24px, 4vw, 40px);
+  }
+
+  .mc-line-cards--single {
+    grid-template-columns: minmax(0, 420px);
+  }
+
+  .mc-line-card__summary {
+    margin-top: auto;
+    padding-top: 12px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--mc-muted);
+  }
+
+  .mc-line-note {
+    margin: 22px 0 0;
+    font-size: 12px;
+    line-height: 1.9;
+    letter-spacing: 0.04em;
+    color: var(--mc-muted);
+  }
+
+  .mc-line-note a {
+    color: var(--mc-accent);
+  }
+
+  /* ---------- 筹备中的栏目 ---------- */
+  .mc-line-soon-panel {
+    max-width: 52rem;
+    margin-top: clamp(28px, 4vw, 44px);
+    padding: clamp(24px, 4vw, 40px);
+    border: 1px dashed var(--mc-line-strong);
+    border-radius: 4px;
+    background: var(--mc-panel);
+  }
+
+  .mc-line-soon-panel h2 {
+    margin: 0;
+    font-family: var(--mc-serif);
+    font-size: clamp(24px, 3vw, 34px);
+    letter-spacing: 0.04em;
+  }
+
+  .mc-line-soon-panel__lead {
+    max-width: 38rem;
+    margin: 14px 0 0;
+    font-size: 13.5px;
+    line-height: 1.9;
+    color: var(--mc-ink-soft);
+  }
+
+  .mc-line-topics {
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--mc-line);
+  }
+
+  .mc-line-topics li {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--mc-line);
+    font-size: 13px;
+  }
+
+  .mc-line-topics span {
+    font-family: var(--mc-serif);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--mc-accent);
+  }
+
+  .mc-line-topics b {
+    font-weight: 500;
+    letter-spacing: 0.06em;
+  }
+
+  .mc-line-topics em {
+    margin-left: auto;
+    font-style: normal;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--mc-muted);
+  }
+
+  .mc-line-soon-panel__note {
+    margin: 22px 0 0;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--mc-muted);
+  }
+
+  .mc-line-soon-panel__note a {
+    margin-left: 10px;
+    color: var(--mc-accent);
+  }
+
+  .mc-line-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: clamp(28px, 5vw, 48px);
+    padding-top: 20px;
+    border-top: 1px solid var(--mc-line);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+  }
+
+  @media (max-width: 860px) {
+    .mc-line-cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .mc-line-cards,
+    .mc-line-cards--single {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

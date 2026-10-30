@@ -11,6 +11,7 @@ import ShaoguangSquare from '../../components/ShaoguangSquare.astro';
 import ShanggongBox from '../../components/ShanggongBox.astro';
 import JunshuPursuit from '../../components/JunshuPursuit.astro';
 import FangchengTrial from '../../components/FangchengTrial.astro';
+import JituCage from '../../components/JituCage.astro';
 import { site } from '../../site';
 
 export async function getStaticPaths() {
@@ -34,6 +35,7 @@ const interactionMap = {
   'shanggong-box': ShanggongBox,
   'junshu-pursuit': JunshuPursuit,
   'fangcheng-trial': FangchengTrial,
+  'jitu-cage': JituCage,
 } as const;
 
 const Interaction = interactionMap[p.interaction as keyof typeof interactionMap];
@@ -50,7 +52,7 @@ const toc = [
 ];
 ---
 
-<Base title={p.title} description={`${p.title}：${p.summary}`} full>
+<Base title={`${p.title}是什么意思？《${p.line}》白话图解`} description={`《${p.line}》${p.title}：${p.summary}`} full>
   <article class="mc-article mc-article--full">
     <header class="mc-proposition__head">
       <div class="mc-proposition__meta">
@@ -78,10 +80,7 @@ const toc = [
             <p class="mc-eyebrow">ORIGINAL</p>
             <h2>原文</h2>
           </header>
-          <details class="mc-original">
-            <summary>看原文（繁体，照录不改字）</summary>
-            <pre>{p.original}</pre>
-          </details>
+          <pre class="mc-original">{p.original}</pre>
           {p.original_note && <p class="mc-original__note">{p.original_note}</p>}
         </section>
 

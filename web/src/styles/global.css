@@ -155,6 +155,78 @@ h3 {
   transform: scaleX(1);
 }
 
+/* ---------- 可选登录入口 ---------- */
+.mc-topbar__end {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 32px);
+}
+
+.mc-account {
+  position: relative;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--mc-muted);
+  cursor: pointer;
+  transition: color 0.3s ease;
+  /* 登录后显示昵称：过长时省略，别把顶栏挤乱 */
+  max-width: 9em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mc-account::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--mc-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+
+.mc-account:hover,
+.mc-account[data-state="in"] {
+  color: var(--mc-ink);
+}
+
+.mc-account:hover::after,
+.mc-account[data-state="in"]::after {
+  transform: scaleX(1);
+}
+
+.mc-account[hidden] {
+  display: none;
+}
+
+/* 已登录：只显示圆形头像，不占文字宽度 */
+.mc-account.is-avatar {
+  display: inline-flex;
+  align-items: center;
+  max-width: none;
+  padding: 0;
+  overflow: visible;
+}
+
+.mc-account.is-avatar::after { display: none; }
+
+.mc-account-avatar {
+  display: block;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--mc-line-strong);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 /* ---------- 右侧滚动标尺 ---------- */
 .mc-ruler {
   position: fixed;
@@ -395,20 +467,6 @@ h3 {
   line-height: 1.2;
 }
 
-.mc-card__desc {
-  font-size: 13px;
-  line-height: 1.75;
-  color: var(--mc-ink-soft);
-}
-
-.mc-card__cta {
-  margin-top: auto;
-  padding-top: 10px;
-  font-size: 12px;
-  letter-spacing: 0.25em;
-  color: var(--mc-accent);
-}
-
 /* ---------- 命题页 ---------- */
 .mc-article {
   padding-top: clamp(112px, 16vh, 160px);
@@ -491,22 +549,8 @@ h3 {
 }
 
 /* 原文 */
-.mc-original summary {
-  cursor: pointer;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  color: var(--mc-accent);
-  font-size: 14px;
-  letter-spacing: 0.08em;
-}
-
-.mc-original summary:hover {
-  color: #f0cd85;
-}
-
-.mc-original pre {
-  margin: 0.7rem 0 0;
+.mc-original {
+  margin: 0.2rem 0 0;
   padding: 20px 22px;
   font-family: var(--mc-serif);
   font-size: 1.1rem;
@@ -825,14 +869,22 @@ h3 {
 .mc-source dl {
   display: grid;
   grid-template-columns: 6rem minmax(0, 1fr);
-  gap: 0.55rem 1rem;
+  gap: 0.55rem 1.4rem;
   margin: 0 0 1.2rem;
   font-size: 14px;
+  max-width: 42rem;
+}
+
+/* 每一项是一个 div 包裹 dt/dd，用 display:contents 让 dt/dd 直接参与网格 */
+.mc-source dl > div {
+  display: contents;
 }
 
 .mc-source dt {
   color: var(--mc-muted);
   letter-spacing: 0.06em;
+  line-height: 1.7;
+  white-space: nowrap;
 }
 
 .mc-source dd {
@@ -963,13 +1015,9 @@ h3 {
     grid-template-columns: minmax(0, 1fr) 10rem;
   }
 
-  /* 全宽命题页：标题左、摘要右，正文列随视口变宽，目录贴右侧 */
+  /* 全宽命题页：标题与摘要都靠左，摘要接在标题下方，行宽控制在可读范围 */
   .mc-article--full .mc-proposition__head {
     max-width: none;
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-    align-items: end;
-    gap: clamp(24px, 4vw, 72px);
   }
 
   .mc-article--full .mc-proposition__head h1 {
@@ -977,9 +1025,11 @@ h3 {
   }
 
   .mc-article--full .mc-lead {
-    max-width: none;
-    margin-top: 0;
-    padding-bottom: 0.6rem;
+    max-width: 34rem;
+    margin-top: clamp(18px, 2.2vw, 30px);
+    font-size: 16px;
+    line-height: 1.9;
+    text-wrap: pretty;
   }
 
   .mc-article--full .mc-layout {
@@ -1042,7 +1092,8 @@ h3 {
 
   /* 触屏：顶栏与页脚链接都撑到 44px 可点高度 */
   .mc-brand,
-  .mc-nav a {
+  .mc-nav a,
+  .mc-account {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -1063,6 +1114,11 @@ h3 {
     letter-spacing: 0.12em;
   }
 
+  .mc-account {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+  }
+
   .mc-board {
     height: 260px !important;
   }
@@ -1076,15 +1132,13 @@ h3 {
   }
 
   .mc-source dl {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: 0.5rem 0.9rem;
+    font-size: 13px;
   }
 
   .mc-source dt {
-    margin-top: 0.5rem;
-  }
-
-  .mc-source dt:first-child {
-    margin-top: 0;
+    white-space: normal;
   }
 }
 
